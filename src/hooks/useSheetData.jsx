@@ -101,8 +101,8 @@ function getValueForHeader(item, h) {
   if (target === 'approvepoprice') {
     return item.approvePoPrice ?? item['Approve Po Price'] ?? '';
   }
-  if (target === 'approvepoqty') {
-    return item.approvePoQty ?? item['Approve Po Qty'] ?? '';
+  if (target === 'approvepoqty' || target === 'netapprovedqty') {
+    return item.approvePoQty ?? item['Approve Po Qty'] ?? item.netApprovedQty ?? item['Net Approved Qty'] ?? '';
   }
 
   return '';
@@ -223,8 +223,10 @@ function normalizeRow(row) {
     'Per Unit Price': row.perUnitPrice ?? row['Per Unit Price'] ?? '',
     approvePoPrice: row.approvePoPrice ?? row['Approve Po Price'] ?? '',
     'Approve Po Price': row.approvePoPrice ?? row['Approve Po Price'] ?? '',
-    approvePoQty: row.approvePoQty ?? row['Approve Po Qty'] ?? '',
-    'Approve Po Qty': row.approvePoQty ?? row['Approve Po Qty'] ?? '',
+    approvePoQty: row.approvePoQty ?? row['Approve Po Qty'] ?? row.netApprovedQty ?? row['Net Approved Qty'] ?? '',
+    'Approve Po Qty': row.approvePoQty ?? row['Approve Po Qty'] ?? row.netApprovedQty ?? row['Net Approved Qty'] ?? '',
+    netApprovedQty: row.approvePoQty ?? row['Approve Po Qty'] ?? row.netApprovedQty ?? row['Net Approved Qty'] ?? '',
+    'Net Approved Qty': row.approvePoQty ?? row['Approve Po Qty'] ?? row.netApprovedQty ?? row['Net Approved Qty'] ?? '',
   };
 }
 
