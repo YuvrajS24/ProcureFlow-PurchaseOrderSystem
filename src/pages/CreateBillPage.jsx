@@ -68,7 +68,7 @@ export function CreateBillPage() {
   const { toast } = useToast();
 
   // FMS is the single source of truth
-  const [fmsData, setFmsData, fmsLoading] = useSheetData('FMS', 'poNumber');
+  const [fmsData, setFmsData, fmsLoading] = useSheetData('fms-2', 'poNumber');
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,6 +80,7 @@ export function CreateBillPage() {
   // Create Bill dialog
   const [createBillDialog, setCreateBillDialog] = useState({ open: false, row: null });
   const [billAmountInput, setBillAmountInput] = useState('');
+  const [perUnitPriceInput, setPerUnitPriceInput] = useState('');
   const [billDateInput, setBillDateInput] = useState('');
   const [receivedAmountInput, setReceivedAmountInput] = useState('');
   const [supplyQuantity2Input, setSupplyQuantity2Input] = useState('');
@@ -344,7 +345,10 @@ export function CreateBillPage() {
 
     const parsedReceived = receivedAmountInput !== '' ? parseFloat(receivedAmountInput) : '';
     const parsedSupply2 = supplyQuantity2Input !== '' ? parseFloat(supplyQuantity2Input) : '';
-    const nowTimestamp = makeTimestamp();
+    const now = new Date();
+    const nowTimestamp = makeTimestamp(now);
+    const planned2Date = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
+    const planned2Timestamp = makeTimestamp(planned2Date);
 
     const updatedFms = fmsData.map((r) =>
       (r._row === row._row || r.poNumber === row.poNumber)
@@ -352,6 +356,8 @@ export function CreateBillPage() {
             ...r,
             billAmount: amount,
             'Bill Amount': amount,
+            perUnitPrice: parseFloat(perUnitPriceInput) || '',
+            'Per Unit Price': parseFloat(perUnitPriceInput) || '',
             billDate: billDateInput,
             'Bill Date': billDateInput,
             billPdf: billPdfUrl,
@@ -366,6 +372,8 @@ export function CreateBillPage() {
             BC: narrationInput,
             actual1: nowTimestamp,
             'Actual 1': nowTimestamp,
+            planned2: planned2Timestamp,
+            'Planned 2': planned2Timestamp,
           }
         : r
     );
@@ -598,6 +606,7 @@ export function CreateBillPage() {
                               <Button
                                 onClick={() => {
                                   setBillAmountInput('');
+                                  setPerUnitPriceInput('');
                                   setBillDateInput(new Date().toISOString().split('T')[0]);
                                   setReceivedAmountInput('');
                                   setSupplyQuantity2Input('');
@@ -898,14 +907,36 @@ export function CreateBillPage() {
                   min="0"
                   step="0.01"
                   value={billAmountInput}
-                  onChange={(e) => setBillAmountInput(e.target.value)}
+                  onChange={(e) => {
+                    setBillAmountInput(e.target.value);
+                    const amount = parseFloat(e.target.value);
+                    const supplyQty = parseFloat(supplyQuantity2Input);
+                    const qty = !isNaN(supplyQty) && supplyQty > 0 ? supplyQty : (Number(createBillDialog.row.totalQuantity) || 1);
+                    if (!isNaN(amount) && qty) {
+                      setPerUnitPriceInput((amount / qty).toFixed(2));
+                    }
+                  }}
                   placeholder="e.g. 50000"
                   className="rounded-xl bg-background border-input text-xs h-9"
                   required
                 />
               </div>
 
-              <div className="space-y-1 text-left">
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Per Unit Price*</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={perUnitPriceInput}
+                  onChange={(e) => setPerUnitPriceInput(e.target.value)}
+                  placeholder="e.g. 250"
+                  className="rounded-xl bg-background border-input text-xs h-9"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1 text-left sm:col-span-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground">Bill Date*</Label>
                 <Input
                   type="date"
@@ -935,7 +966,15 @@ export function CreateBillPage() {
                   type="number"
                   min="0"
                   value={supplyQuantity2Input}
-                  onChange={(e) => setSupplyQuantity2Input(e.target.value)}
+                  onChange={(e) => {
+                    setSupplyQuantity2Input(e.target.value);
+                    const supplyQty = parseFloat(e.target.value);
+                    const amount = parseFloat(billAmountInput);
+                    const qty = !isNaN(supplyQty) && supplyQty > 0 ? supplyQty : (Number(createBillDialog.row.totalQuantity) || 1);
+                    if (!isNaN(amount) && qty) {
+                      setPerUnitPriceInput((amount / qty).toFixed(2));
+                    }
+                  }}
                   placeholder="e.g. 200"
                   className="rounded-xl bg-background border-input text-xs h-9"
                 />

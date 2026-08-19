@@ -50,7 +50,7 @@ export function ReadyProductPage() {
   const { toast } = useToast();
 
   // Ready product records (read directly from FMS sheet)
-  const [readyProducts, setReadyProducts] = useSheetData('FMS', 'poNumber');
+  const [readyProducts, setReadyProducts] = useSheetData('fms-2', 'poNumber');
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,7 +68,10 @@ export function ReadyProductPage() {
 
   // ── Mark product as ready ──────────────────────────────────────────
   const handleMarkReady = (item) => {
-    const nowTimestamp = makeTimestamp(); // M/D/YYYY H:mm:ss format
+    const now = new Date();
+    const nowTimestamp = makeTimestamp(now); // M/D/YYYY H:mm:ss format
+    const planned3Date = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+    const planned3Timestamp = makeTimestamp(planned3Date);
     const userName = currentUser ? currentUser.name || currentUser.username : 'System';
     const parsedExtra = extraQtyInput !== '' && !isNaN(parseInt(extraQtyInput, 10)) ? parseInt(extraQtyInput, 10) : 0;
 
@@ -83,6 +86,8 @@ export function ReadyProductPage() {
             extraQty: parsedExtra,
             'BF': parsedExtra,
             BF: parsedExtra,
+            planned3: planned3Timestamp,
+            'Planned 3': planned3Timestamp,
           }
         : r
     );

@@ -49,7 +49,7 @@ export function SupplyCheckPage() {
   const { toast } = useToast();
 
   // Consolidated FMS sheet
-  const [fmsData, setFmsData] = useSheetData('FMS', 'poNumber');
+  const [fmsData, setFmsData] = useSheetData('fms-2', 'poNumber');
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,14 +61,17 @@ export function SupplyCheckPage() {
   const [detailDialog, setDetailDialog] = useState({ open: false, item: null });
   const [cancelDialog, setCancelDialog] = useState({ open: false, item: null });
 
-  // ── Pending   = planned5 (col AH) NOT null  AND  actual5 (col AI) IS empty
-  // ── Completed = planned5 (col AH) NOT null  AND  actual5 (col AI) NOT empty
-  const isPending = (row) => hasValue(row.planned5) && !hasValue(row.actual5);
-  const isCompleted = (row) => hasValue(row.planned5) && hasValue(row.actual5);
+  // ── Pending   = planned3 (col AB) NOT null  AND  actual3 (col AC) IS empty
+  // ── Completed = planned3 (col AB) NOT null  AND  actual3 (col AC) NOT empty
+  const isPending = (row) => hasValue(row.planned3) && !hasValue(row.actual3);
+  const isCompleted = (row) => hasValue(row.planned3) && hasValue(row.actual3);
 
   // ── Mark as supply checked ─────────────────────────────────────────
   const handleMarkComplete = (item) => {
-    const nowTimestamp = makeTimestamp(); // M/D/YYYY H:mm:ss format
+    const now = new Date();
+    const nowTimestamp = makeTimestamp(now); // M/D/YYYY H:mm:ss format
+    const planned4Date = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const planned4Timestamp = makeTimestamp(planned4Date);
     const userName = currentUser ? currentUser.name || currentUser.username : 'System';
     const totalQty = Number(item.totalQuantity || item['Total Quantity'] || item.quantity || item['Quantity'] || 0);
     const parsedDamage = damageQtyInput !== '' ? parseFloat(damageQtyInput) : 0;
@@ -109,7 +112,7 @@ export function SupplyCheckPage() {
       r.poNumber === item.poNumber
         ? {
             ...r,
-            actual5: nowTimestamp,
+            actual3: nowTimestamp,
             updatedBy: userName,
             'Damage Qty': parsedDamage,
             'Damage Quantity': parsedDamage,
@@ -129,6 +132,8 @@ export function SupplyCheckPage() {
             BF: parsedExtra,
             'Supply Check': `Checked (Dmg: ${parsedDamage}, Ret: ${parsedReturn}, Extra: ${parsedExtra})`,
             supplyCheck: `Checked (Dmg: ${parsedDamage}, Ret: ${parsedReturn}, Extra: ${parsedExtra})`,
+            planned4: planned4Timestamp,
+            'Planned 4': planned4Timestamp,
           }
         : r
     );
@@ -142,8 +147,8 @@ export function SupplyCheckPage() {
 
   // ── Filtered & searched list ───────────────────────────────────────
   const filteredItems = useMemo(() => {
-    // Only show items where planned5 (col AH) has a value and are not deleted
-    let list = fmsData.filter((r) => hasValue(r.planned5) && !isDeleted(r));
+    // Only show items where planned3 (col AB) has a value and are not deleted
+    let list = fmsData.filter((r) => hasValue(r.planned3) && !isDeleted(r));
 
     if (activeTab === 'pending') list = list.filter(isPending);
     else if (activeTab === 'history') list = list.filter(isCompleted);
@@ -162,7 +167,7 @@ export function SupplyCheckPage() {
   }, [fmsData, activeTab, searchTerm]);
 
   const counts = useMemo(() => {
-    const staged = fmsData.filter((r) => hasValue(r.planned5) && !isDeleted(r));
+    const staged = fmsData.filter((r) => hasValue(r.planned3) && !isDeleted(r));
     const pendingCount = staged.filter(isPending).length;
     const historyCount = staged.filter(isCompleted).length;
     return {
@@ -337,11 +342,11 @@ export function SupplyCheckPage() {
                       </TableCell>
                       <TableCell className="py-4 text-left">
                         <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />{formatDate(item.planned5)}
+                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />{formatDate(item.planned3)}
                         </span>
                       </TableCell>
                       <TableCell className="py-4 text-left">
-                        {hasValue(item.actual5) ? (
+                        {hasValue(item.actual3) ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             <CheckCircle2 className="h-3 w-3" />Checked
                           </span>
@@ -438,7 +443,7 @@ export function SupplyCheckPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Planned Date</span>
-                    <span className="font-medium">{formatDate(confirmDialog.item.planned5)}</span>
+                    <span className="font-medium">{formatDate(confirmDialog.item.planned3)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Extra Qty</span>
@@ -528,13 +533,13 @@ export function SupplyCheckPage() {
                 { label: 'PO Quantity', value: detailDialog.item.totalQuantity?.toLocaleString() },
                 { label: 'Location', value: detailDialog.item.location },
                 { label: 'Address', value: detailDialog.item.address },
-                { label: 'Planned 5 (AH)', value: formatDate(detailDialog.item.planned5) },
-                { label: 'Actual 5 (AI)', value: hasValue(detailDialog.item.actual5) ? formatDate(detailDialog.item.actual5) : 'Not yet' },
-                { label: 'Status', value: hasValue(detailDialog.item.actual5) ? 'Checked' : 'Pending' },
+                { label: 'Planned 3 (AB)', value: formatDate(detailDialog.item.planned3) },
+                { label: 'Actual 3 (AC)', value: hasValue(detailDialog.item.actual3) ? formatDate(detailDialog.item.actual3) : 'Not yet' },
+                { label: 'Status', value: hasValue(detailDialog.item.actual3) ? 'Checked' : 'Pending' },
                 { label: 'Damage Qty', value: detailDialog.item.damageQty ?? detailDialog.item['Damage Qty'] ?? detailDialog.item.BD ?? 0 },
                 { label: 'Extra Qty', value: detailDialog.item.extraQty ?? detailDialog.item['Extra Qty'] ?? detailDialog.item.BF ?? 0 },
                 { label: 'Vehicle Number (BE)', value: detailDialog.item.vehicleNumber ?? detailDialog.item['Vehicle Number'] ?? detailDialog.item.BE ?? '—' },
-                { label: 'Delay 5 (AJ)', value: hasValue(detailDialog.item.actual5) ? (detailDialog.item.delay5 === 0 ? 'On time' : `${detailDialog.item.delay5} day(s)`) : '—' },
+                { label: 'Delay 3 (AD)', value: hasValue(detailDialog.item.actual3) ? (detailDialog.item.delay3 === 0 ? 'On time' : `${detailDialog.item.delay3} day(s)`) : '—' },
                 { label: 'Updated By', value: detailDialog.item.updatedBy || '—' },
               ].map((row) => (
                 <div key={row.label} className="flex items-start justify-between text-sm gap-4">

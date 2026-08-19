@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSheetData } from '@/hooks/useSheetData';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { 
   Trash2, 
   Search, 
@@ -12,11 +14,13 @@ import {
   FileText, 
   ShoppingBag,
   FilePlus2,
+  ArrowLeft
 } from 'lucide-react';
 import { formatDisplayDate } from '@/utils/dateUtils';
 
 export function DeletedPOsPage() {
-  const [fmsData, , loading] = useSheetData('FMS', 'Serial No');
+  const navigate = useNavigate();
+  const [fmsData, , loading] = useSheetData('fms-2', 'Serial No');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter only soft-deleted PO records
@@ -68,7 +72,15 @@ export function DeletedPOsPage() {
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="flex flex-col gap-2 text-left">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="self-start gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer -ml-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2.5">
             <Trash2 className="h-7 w-7 text-rose-600 dark:text-rose-400" />
             Deleted Purchase Orders

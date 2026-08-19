@@ -48,7 +48,7 @@ export function ApproveProductPage() {
   const { toast } = useToast();
 
   // Load consolidated FMS sheet
-  const [fmsData, setFmsData] = useSheetData('FMS', 'poNumber');
+  const [fmsData, setFmsData] = useSheetData('fms-2', 'poNumber');
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,15 +56,33 @@ export function ApproveProductPage() {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, item: null });
   const [detailDialog, setDetailDialog] = useState({ open: false, item: null });
   const [cancelDialog, setCancelDialog] = useState({ open: false, item: null });
+  
+  const [approvePoPriceInput, setApprovePoPriceInput] = useState('');
+  const [approvePoQtyInput, setApprovePoQtyInput] = useState('');
 
-  // ── Pending   = planned6 (col AK) NOT null  AND  actual6 (col AL) IS empty
-  // ── Completed = planned6 (col AK) NOT null  AND  actual6 (col AL) NOT empty
-  const isPending = (row) => hasValue(row.planned6) && !hasValue(row.actual6);
-  const isCompleted = (row) => hasValue(row.planned6) && hasValue(row.actual6);
+  // ── Pending   = planned4 (col AG) NOT null  AND  actual4 (col AH) IS empty
+  // ── Completed = planned4 (col AG) NOT null  AND  actual4 (col AH) NOT empty
+  const isPending = (row) => hasValue(row.planned4) && !hasValue(row.actual4);
+  const isCompleted = (row) => hasValue(row.planned4) && hasValue(row.actual4);
 
   // ── Mark as approved ───────────────────────────────────────────────
   const handleMarkComplete = (item) => {
-    const nowTimestamp = makeTimestamp(); // M/D/YYYY H:mm:ss format
+    const addWorkdays = (startDate, days) => {
+      let date = new Date(startDate);
+      let count = 0;
+      while (count < days) {
+        date.setDate(date.getDate() + 1);
+        const day = date.getDay(); // 0 is Sunday, 6 is Saturday
+        if (day !== 0) {
+          count++;
+        }
+      }
+      return date;
+    };
+    const now = new Date();
+    const nowTimestamp = makeTimestamp(now); // M/D/YYYY H:mm:ss format
+    const planned5Date = addWorkdays(now, 4);
+    const planned5Timestamp = makeTimestamp(planned5Date);
     const userName = currentUser ? currentUser.name || currentUser.username : 'System';
 
     // Update FMS directly
@@ -72,7 +90,13 @@ export function ApproveProductPage() {
       r.poNumber === item.poNumber
         ? {
           ...r,
-          actual6: nowTimestamp,
+          approvePoPrice: parseFloat(approvePoPriceInput) || '',
+          'Approve Po Price': parseFloat(approvePoPriceInput) || '',
+          approvePoQty: parseFloat(approvePoQtyInput) || '',
+          'Approve Po Qty': parseFloat(approvePoQtyInput) || '',
+          actual4: nowTimestamp,
+          planned5: planned5Timestamp,
+          'Planned 5': planned5Timestamp,
           updatedBy: userName,
         }
         : r
@@ -87,8 +111,8 @@ export function ApproveProductPage() {
 
   // ── Filtered & searched list ───────────────────────────────────────
   const filteredItems = useMemo(() => {
-    // Only show items where planned6 (col AK) has a value and are not deleted
-    let list = fmsData.filter((r) => hasValue(r.planned6) && !isDeleted(r));
+    // Only show items where planned4 (col AG) has a value and are not deleted
+    let list = fmsData.filter((r) => hasValue(r.planned4) && !isDeleted(r));
 
     if (activeTab === 'pending') list = list.filter(isPending);
     else if (activeTab === 'history') list = list.filter(isCompleted);
@@ -107,7 +131,7 @@ export function ApproveProductPage() {
   }, [fmsData, activeTab, searchTerm]);
 
   const counts = useMemo(() => {
-    const staged = fmsData.filter((r) => hasValue(r.planned6) && !isDeleted(r));
+    const staged = fmsData.filter((r) => hasValue(r.planned4) && !isDeleted(r));
     const pendingCount = staged.filter(isPending).length;
     const historyCount = staged.filter(isCompleted).length;
     return {
@@ -237,7 +261,11 @@ export function ApproveProductPage() {
                           <div className="flex items-center gap-1.5">
                             {!hasValue(item.actual6) && (
                               <>
-                                <Button onClick={() => setConfirmDialog({ open: true, item })} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm">
+                                <Button onClick={() => {
+                                  setApprovePoPriceInput(item.perUnitPrice || item['Per Unit Price'] || '');
+                                  setApprovePoQtyInput(calculatedPoQty || '');
+                                  setConfirmDialog({ open: true, item });
+                                }} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm">
                                   <CheckSquare className="h-3.5 w-3.5" />Approve
                                 </Button>
                                 <Button
@@ -284,11 +312,11 @@ export function ApproveProductPage() {
                       </TableCell>
                       <TableCell className="py-4 text-left">
                         <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />{formatDate(item.planned6)}
+                          <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />{formatDate(item.planned4)}
                         </span>
                       </TableCell>
                       <TableCell className="py-4 text-left">
-                        {hasValue(item.actual6) ? (
+                        {hasValue(item.actual4) ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             <CheckCircle2 className="h-3 w-3" />Approved
                           </span>
@@ -355,7 +383,7 @@ export function ApproveProductPage() {
               <CheckSquare className="h-5 w-5 text-emerald-500" />Confirm Product Approval
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground mt-1">
-              This will approve the product and stamp Actual 6 (col AL) in the FMS sheet.
+              This will approve the product and stamp Actual 4 (col AH) in the FMS sheet.
             </DialogDescription>
           </DialogHeader>
           {confirmDialog.item && (
@@ -370,9 +398,35 @@ export function ApproveProductPage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Planned Date</span>
-                <span className="font-medium">{formatDate(confirmDialog.item.planned6)}</span>
+                <span className="font-medium">{formatDate(confirmDialog.item.planned4)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              
+              <div className="pt-2">
+                <label className="text-[11px] font-semibold text-muted-foreground">Approve PO Price*</label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={approvePoPriceInput}
+                  onChange={(e) => setApprovePoPriceInput(e.target.value)}
+                  className="rounded-xl bg-background border-input text-xs h-9 mt-1"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground">Approve PO Qty*</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={approvePoQtyInput}
+                  onChange={(e) => setApprovePoQtyInput(e.target.value)}
+                  className="rounded-xl bg-background border-input text-xs h-9 mt-1"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-sm pt-2">
                 <span className="text-muted-foreground">Approved By</span>
                 <span className="font-medium">{currentUser ? currentUser.name || currentUser.username : 'System'}</span>
               </div>
@@ -386,7 +440,7 @@ export function ApproveProductPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+ 
       {/* Detail Dialog */}
       <Dialog open={detailDialog.open} onOpenChange={(open) => !open && setDetailDialog({ open: false, item: null })}>
         <DialogContent
@@ -409,10 +463,10 @@ export function ApproveProductPage() {
                 { label: 'Extra Qty', value: detailDialog.item.extraQty ?? detailDialog.item['Extra Qty'] ?? detailDialog.item.BF ?? 0 },
                 { label: 'Location', value: detailDialog.item.location },
                 { label: 'Address', value: detailDialog.item.address },
-                { label: 'Planned 6 (AK)', value: formatDate(detailDialog.item.planned6) },
-                { label: 'Actual 6 (AL)', value: hasValue(detailDialog.item.actual6) ? formatDate(detailDialog.item.actual6) : 'Not yet' },
-                { label: 'Status', value: hasValue(detailDialog.item.actual6) ? 'Approved' : 'Pending' },
-                { label: 'Delay 6 (AM)', value: hasValue(detailDialog.item.actual6) ? (detailDialog.item.delay6 === 0 ? 'On time' : `${detailDialog.item.delay6} day(s)`) : '—' },
+                { label: 'Planned 4 (AG)', value: formatDate(detailDialog.item.planned4) },
+                { label: 'Actual 4 (AH)', value: hasValue(detailDialog.item.actual4) ? formatDate(detailDialog.item.actual4) : 'Not yet' },
+                { label: 'Status', value: hasValue(detailDialog.item.actual4) ? 'Approved' : 'Pending' },
+                { label: 'Delay 4 (AI)', value: hasValue(detailDialog.item.actual4) ? (detailDialog.item.delay4 === 0 ? 'On time' : `${detailDialog.item.delay4} day(s)`) : '—' },
                 { label: 'Updated By', value: detailDialog.item.updatedBy || '—' },
               ].map((row) => (
                 <div key={row.label} className="flex items-start justify-between text-sm gap-4">

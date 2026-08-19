@@ -56,7 +56,7 @@ export function CheckTransportPage() {
   const { toast } = useToast();
 
   // FMS is the single source of truth — same as ReadyProductPage / CreateBillPage
-  const [fmsData, setFmsData, fmsLoading] = useSheetData('FMS', 'poNumber');
+  const [fmsData, setFmsData, fmsLoading] = useSheetData('fms-2', 'poNumber');
 
   // Locations & Transporters from master sheet
   const [locationData] = useSheetData('Locations', 'name');

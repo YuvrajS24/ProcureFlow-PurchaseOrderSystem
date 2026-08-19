@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSheetData } from '@/hooks/useSheetData';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +13,8 @@ import {
   ShoppingBag, 
   Building2,
   Calendar,
-  Layers
+  Layers,
+  ArrowLeft
 } from 'lucide-react';
 
 import { formatDisplayDate } from '@/utils/dateUtils';
@@ -22,8 +24,9 @@ const formatDate = (val) => {
 };
 
 export function CancelledOrdersPage() {
+  const navigate = useNavigate();
   const [cancelData, , loading, refetch] = useSheetData('Cancel', 'Timestamp');
-  const [fmsData] = useSheetData('FMS', 'poNumber');
+  const [fmsData] = useSheetData('fms-2', 'poNumber');
   const [searchTerm, setSearchTerm] = useState('');
 
   const fmsMap = useMemo(() => {
@@ -65,7 +68,15 @@ export function CancelledOrdersPage() {
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="text-left">
+        <div className="text-left flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="self-start gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer -ml-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2.5">
             <XCircle className="h-7 w-7 text-rose-500" />
             Canceled Orders
@@ -78,7 +89,7 @@ export function CancelledOrdersPage() {
           variant="outline"
           onClick={() => refetch()}
           disabled={loading}
-          className="self-start sm:self-auto border-border rounded-xl gap-2 text-xs cursor-pointer"
+          className="self-start sm:self-auto border-border rounded-xl gap-2 text-xs cursor-pointer mt-7 sm:mt-0"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh Data

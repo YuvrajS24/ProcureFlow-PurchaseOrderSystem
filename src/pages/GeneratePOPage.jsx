@@ -45,7 +45,7 @@ export function GeneratePOPage() {
   const { toast } = useToast();
 
   // Sheet-backed lists
-  const [purchaseOrders, setPurchaseOrders] = useSheetData('FMS', 'poNumber');
+  const [purchaseOrders, setPurchaseOrders] = useSheetData('fms-2', 'poNumber');
   const [locationData, setLocationData] = useSheetData('Locations', 'name');
   const [vendors] = useSheetData('Vendors', 'id');
   const locationNames = locationData.map(l => l.name);

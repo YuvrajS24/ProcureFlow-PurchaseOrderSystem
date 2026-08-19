@@ -43,22 +43,10 @@ export function Sidebar({ mobileOpen, onClose }) {
       permission: 'Create Bill'
     },
     {
-      label: 'Ready Product',
+      label: 'Ready Product & Transport',
       path: '/ready-product',
       icon: PackageCheck,
       permission: 'Ready Product'
-    },
-    {
-      label: 'Check Transport',
-      path: '/check-transport',
-      icon: Truck,
-      permission: 'Check Transport'
-    },
-    {
-      label: 'Print Invoice',
-      path: '/print-invoice',
-      icon: Printer,
-      permission: 'Print Invoice'
     },
     {
       label: 'Supply Check',
@@ -77,18 +65,6 @@ export function Sidebar({ mobileOpen, onClose }) {
       path: '/payment-processing',
       icon: CreditCard,
       permission: 'Payment Processing'
-    },
-    {
-      label: 'Canceled Orders',
-      path: '/canceled-orders',
-      icon: XCircle,
-      permission: 'Canceled Orders'
-    },
-    {
-      label: 'Deleted POs',
-      path: '/deleted-pos',
-      icon: Trash2,
-      permission: 'Deleted POs'
     },
     {
       label: 'Settings',

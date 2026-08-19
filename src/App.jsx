@@ -11,8 +11,6 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { GeneratePOPage } from '@/pages/GeneratePOPage';
 import { CreateBillPage } from '@/pages/CreateBillPage';
 import { ReadyProductPage } from '@/pages/ReadyProductPage';
-import { CheckTransportPage } from '@/pages/CheckTransportPage';
-import { PrintInvoicePage } from '@/pages/PrintInvoicePage';
 import { SupplyCheckPage } from '@/pages/SupplyCheckPage';
 import { ApproveProductPage } from '@/pages/ApproveProductPage';
 import { PaymentProcessingPage } from '@/pages/PaymentProcessingPage';
@@ -110,32 +108,12 @@ export default function App() {
                 } 
               />
               
-              {/* Ready Product Route */}
+              {/* Ready Product & Transport Route */}
               <Route 
                 path="ready-product" 
                 element={
                   <ProtectedRoute requiredPermission="Ready Product">
                     <ReadyProductPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Check Transport Route */}
-              <Route 
-                path="check-transport" 
-                element={
-                  <ProtectedRoute requiredPermission="Check Transport">
-                    <CheckTransportPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Print Invoice Route */}
-              <Route 
-                path="print-invoice" 
-                element={
-                  <ProtectedRoute requiredPermission="Print Invoice">
-                    <PrintInvoicePage />
                   </ProtectedRoute>
                 } 
               />

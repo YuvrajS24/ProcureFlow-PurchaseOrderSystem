@@ -6,7 +6,7 @@ var CACHE_EXPIRY_SEC = 60; // seconds for CacheService TTL
 let _ss = null;
 function getSpreadsheet() {
     if (!_ss) {
-        var id = "17w8Yz1O-tXSYeVb3TxdMrCRzKQ8ZE74jQohSpUf7H2A";
+        var id = "1DYTq5KGS-lDGFbKqXB8xpLy0I6VM0YeUsuW5CvCd_n0";
         try {
             if (typeof SPREADSHEET_ID !== 'undefined' && SPREADSHEET_ID) {
                 id = SPREADSHEET_ID;
@@ -137,6 +137,69 @@ const SHEET_CONFIGS = {
             'Payment History': 'paymentHistory',
         }
     },
+    'fms-2': {
+        headerRow: 6,
+        columnMap: {
+            'Timestamp': 'timestamp',
+            'Serial No': 'serialNo',
+            'PO Number': 'poNumber',
+            'Vendor Name': 'vendorName',
+            'Total Quantity': 'totalQuantity',
+            'Location': 'location',
+            'Address': 'address',
+            'Created By': 'createdBy',
+            'PO Received Date': 'poReceivedDate',
+            'PO Expired Date': 'poExpiredDate',
+            'PO PDF': 'poPdfName',
+            'Planned 1': 'planned1',
+            'Actual 1': 'actual1',
+            'Delay 1': 'delay1',
+            'Bill Number': 'billNumber',
+            'Bill Amount': 'billAmount',
+            'Per Unit Price': 'perUnitPrice',
+            'Bill Date': 'billDate',
+            'Bill PDF': 'billPdf',
+            'Planned 2': 'planned2',
+            'Actual 2': 'actual2',
+            'Delay 2': 'delay2',
+            'Extra Qty': 'extraQty',
+            'Transporter name': 'transporterName',
+            'Quantity': 'quantity',
+            'Delivery location': 'deliveryLocation',
+            'Delivery address': 'deliveryAddress',
+            'Planned 3': 'planned3',
+            'Actual 3': 'actual3',
+            'Delay 3': 'delay3',
+            'Damage Qty': 'damageQty',
+            'Return Qty': 'returnQty',
+            'Planned 4': 'planned4',
+            'Actual 4': 'actual4',
+            'Delay 4': 'delay4',
+            'Approve Po Price': 'approvePoPrice',
+            'Approve Po Qty': 'approvePoQty',
+            'Planned 5': 'planned5',
+            'Actual 5': 'actual5',
+            'Delay 5': 'delay5',
+            'Total Paid': 'totalPaid',
+            'Balance Due': 'balanceDue',
+            'Payment Status': 'paymentStatus',
+            'Delete Status': 'deleteStatus',
+            'Delivered Qty': 'deliveredQty',
+            'Pending Qty': 'pendingQty',
+            'Cancel Qty': 'cancelQty',
+            'Status': 'status',
+            'Narration': 'narration',
+            'Supply Quantity 1': 'supplyQuantity1',
+            'Received Amount': 'receivedAmount',
+            'Supply Quantity 2': 'supplyQuantity2',
+            'Vehicle Number': 'vehicleNumber',
+            'Extra Qty': 'extraQty',
+            'Return Qty': 'returnQty',
+            'Supply Check Return Qty': 'returnQty',
+            'Return Quantity': 'returnQty',
+            'Payment History': 'paymentHistory',
+        }
+    },
     'Login': {
         headerRow: 1,
         columnMap: {
@@ -220,7 +283,7 @@ function parseParameters(e) {
         } else if (type.includes('application/x-www-form-urlencoded')) {
             raw.split('&').forEach(pair => {
                 const [k, v] = pair.split('=');
-                if (k) params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+                if (k) params[decodeURIComponent(k.replace(/\+/g, ' '))] = decodeURIComponent((v || '').replace(/\+/g, ' '));
             });
         }
     }
@@ -504,6 +567,175 @@ function doGet(e) {
         const action = e.parameter.action;
         const sheetName = e.parameter.sheet || e.parameter.sheetName || "Data";
         const ss = getSpreadsheet();
+
+        if (action === 'readFormulas') {
+            const sheet = ss.getSheetByName(sheetName);
+            if (!sheet) return jsonError("Sheet '" + sheetName + "' not found");
+            const lastCol = Math.max(1, sheet.getLastColumn());
+            const range = sheet.getRange(2, 1, 5, lastCol);
+            return jsonData({
+                success: true,
+                formulas: range.getFormulas(),
+                values: range.getValues(),
+                backgrounds: range.getBackgrounds(),
+                textColors: range.getFontColors(),
+                numberFormats: range.getNumberFormats(),
+                headers: sheet.getRange(5, 1, 1, lastCol).getValues()[0]
+            });
+        }
+
+        if (action === 'copyFormat') {
+            const fms = ss.getSheetByName("FMS");
+            const fms2 = ss.getSheetByName("fms-2");
+            if (!fms || !fms2) return jsonError("Original FMS or fms-2 tab not found");
+            const lastCol = Math.max(fms.getLastColumn(), fms2.getLastColumn());
+            const srcRange = fms.getRange(1, 1, 6, lastCol);
+            const destRange = fms2.getRange(1, 1, 6, lastCol);
+            
+            // Clear all values in rows 1 to 5 of fms-2 to remove old super headings
+            fms2.getRange(1, 1, 5, lastCol).clearContent();
+            
+            // Unmerge destination
+            destRange.breakApart();
+            
+            // Copy format
+            srcRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+            return jsonSuccess("Formatting copied successfully");
+        }
+
+        if (action === 'restoreDesign') {
+            const fms = ss.getSheetByName("FMS");
+            const fms2 = ss.getSheetByName("fms-2");
+            if (!fms || !fms2) return jsonError("Original FMS or fms-2 tab not found");
+
+            const lastCol = Math.max(fms.getLastColumn(), fms2.getLastColumn());
+            
+            // Set frozen rows and columns to match original FMS sheet
+            fms2.setFrozenRows(fms.getFrozenRows());
+            fms2.setFrozenColumns(fms.getFrozenColumns());
+            
+            // 1. Unmerge rows 1-6 entirely in fms-2 to clean up
+            fms2.getRange(1, 1, 6, lastCol).breakApart();
+            fms2.getRange(1, 1, 5, lastCol).clearContent();
+
+            // 2. Copy format AND values from FMS for columns A-K (1-11) and AT-BG (46-59) in rows 1-6
+            fms.getRange(1, 1, 6, 11).copyTo(fms2.getRange(1, 1, 6, 11), SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+            fms.getRange(1, 46, 6, 14).copyTo(fms2.getRange(1, 46, 6, 14), SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+
+            // Copy format for data rows 7 onwards
+            const fmsLastRow = Math.max(7, fms.getLastRow());
+            fms.getRange(7, 1, fmsLastRow - 6, lastCol).copyTo(fms2.getRange(7, 1, fmsLastRow - 6, lastCol), SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+
+            // 3. Define and format rows 2-5 for consolidated stages (L to AS / Col 12 to 45)
+            const stages = [
+                { start: 12, end: 19, text: "Create Bill", bg: "#fce5cd" },
+                { start: 20, end: 27, text: "Ready Product & Transport", bg: "#fff2cc" },
+                { start: 28, end: 32, text: "Supply Check", bg: "#cfe2f3" },
+                { start: 33, end: 37, text: "Approve Product", bg: "#ead1dc" },
+                { start: 38, end: 45, text: "Payment Processing", bg: "#d9d2e9" }
+            ];
+
+            stages.forEach(stg => {
+                // Format Row 2 (Stage Name)
+                const r2 = fms2.getRange(2, stg.start, 1, stg.end - stg.start + 1);
+                r2.merge().setValue(stg.text).setBackground(stg.bg).setFontColor("#000000").setHorizontalAlignment("center").setVerticalAlignment("middle").setFontWeight("bold").setFontSize(11).setBorder(true, true, true, true, true, true);
+                
+                // Format Row 3 (Purchase Order Site) - Leave blank as in FMS 1
+                const r3 = fms2.getRange(3, stg.start, 1, stg.end - stg.start + 1);
+                r3.merge().setValue("").setBackground(stg.bg).setBorder(true, true, true, true, true, true);
+                
+                // Format Row 4 (Purchase Order Site)
+                const r4 = fms2.getRange(4, stg.start, 1, stg.end - stg.start + 1);
+                r4.merge().setValue("Purchase Order Site").setBackground(stg.bg).setFontColor("#000000").setHorizontalAlignment("center").setVerticalAlignment("middle").setFontSize(9).setBorder(true, true, true, true, true, true);
+                
+                // Format Row 5 (Buffer / Timings - Merge horizontally!)
+                const r5 = fms2.getRange(5, stg.start, 1, stg.end - stg.start + 1);
+                r5.merge().setBackground(stg.bg).setFontColor("#000000").setHorizontalAlignment("center").setVerticalAlignment("middle").setFontSize(10).setBorder(true, true, true, true, true, true);
+            });
+
+            // Set Row 5 values and formats manually to align with consolidated columns
+            // Stage 1 (Create Bill) starts at Column 12 (L)
+            const cellL5 = fms2.getRange("L5");
+            cellL5.setValue(new Date(1899, 11, 30, 18, 38, 50));
+            cellL5.setNumberFormat("M/d/yyyy H:mm:ss");
+
+            // Stage 2 (Ready Product & Transport) starts at Column 20 (T)
+            const cellT5 = fms2.getRange("T5");
+            cellT5.setValue(new Date(1899, 11, 29, 19, 38, 50));
+            cellT5.setNumberFormat("h:mm:ss");
+
+            // Stage 3 (Supply Check) starts at Column 28 (AB)
+            fms2.getRange("AB5").setValue("");
+
+            // Stage 4 (Approve Product) starts at Column 33 (AG)
+            fms2.getRange("AG5").setValue("");
+
+            // Stage 5 (Payment Processing) starts at Column 38 (AL) - Set to 4 for Planned 5 formula reference
+            fms2.getRange("AL5").setValue(4);
+
+            // 4. Format row 6 headers for columns L-BG (12-59)
+            const row6Headers = fms2.getRange(6, 12, 1, 48);
+            row6Headers.setBackground("#f3f3f3");
+            row6Headers.setFontColor("#000000");
+            row6Headers.setFontWeight("bold");
+            row6Headers.setHorizontalAlignment("center");
+            row6Headers.setVerticalAlignment("middle");
+            row6Headers.setBorder(true, true, true, true, true, true);
+
+            return jsonSuccess("Design and super headings restored successfully!");
+        }
+
+        if (action === 'fixWidthsAndLabels') {
+            const fms2 = ss.getSheetByName("fms-2");
+            if (!fms2) return jsonError("fms-2 tab not found");
+
+            const widths = {
+                1: 150,  // A: Timestamp
+                3: 150,  // C: PO Number
+                4: 200,  // D: Vendor Name
+                5: 100,  // E: Total Quantity
+                6: 100,  // F: Location
+                7: 300,  // G: Address
+                8: 120,  // H: Created By
+                9: 150,  // I: PO Received Date
+                10: 150, // J: PO Expired Date
+                11: 150, // K: PO PDF
+                13: 150, // M: Actual 1
+                15: 150, // O: Bill Number
+                16: 100, // P: Bill Amount
+                17: 100, // Q: Per Unit Price
+                18: 150, // R: Bill Date
+                19: 150, // S: Bill PDF
+                21: 150, // U: Actual 2
+                24: 150, // X: Transporter name
+                25: 100, // Y: Quantity
+                26: 150, // Z: Delivery location
+                27: 300, // AA: Delivery address
+                29: 150, // AC: Actual 3
+                34: 150, // AH: Actual 4
+                39: 150, // AM: Actual 5
+                51: 200, // AY: Narration 1
+                55: 200, // BC: Narration 2
+                57: 150  // BE: Vehicle Number
+            };
+
+            for (const col in widths) {
+                fms2.setColumnWidth(parseInt(col), widths[col]);
+            }
+
+            const poLabels = ["What", "Who", "How", "When"];
+            for (let i = 0; i < 4; i++) {
+                const rng = fms2.getRange(i + 2, 1);
+                rng.setValue(poLabels[i]);
+                rng.setFontColor("#000000");
+                rng.setFontWeight("bold");
+                rng.setFontSize(11);
+                rng.setHorizontalAlignment("left");
+                rng.setVerticalAlignment("middle");
+            }
+
+            return jsonSuccess("Widths and PO labels fixed successfully!");
+        }
 
         if (WRITE_ACTIONS[action]) {
             if (VIRTUAL_SHEETS[sheetName]) {

@@ -59,31 +59,17 @@ const getPoCurrentStage = (poNumber, stages) => {
       : { name: 'Supply Check', color: 'bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-900/30' };
   }
 
-  const inPrint = printInvoice.find(x => x.poNumber === poNumber);
-  if (inPrint) {
-    return inPrint.actualDate
-      ? { name: 'Supply Check', color: 'bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-900/30' }
-      : { name: 'Print Invoice', color: 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30' };
-  }
-
-  const inTransport = checkTransport.find(x => x.poNumber === poNumber);
-  if (inTransport) {
-    return inTransport.actualDate
-      ? { name: 'Print Invoice', color: 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30' }
-      : { name: 'Check Transport', color: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30' };
-  }
-
   const inReady = readyProducts.find(x => x.poNumber === poNumber);
   if (inReady) {
     return inReady.actualDate
-      ? { name: 'Check Transport', color: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30' }
-      : { name: 'Ready Product', color: 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30' };
+      ? { name: 'Supply Check', color: 'bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-900/30' }
+      : { name: 'Ready Product & Transport', color: 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30' };
   }
 
   const inBills = bills.find(x => x.poNumber === poNumber);
   if (inBills) {
     return inBills.actualDate
-      ? { name: 'Ready Product', color: 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30' }
+      ? { name: 'Ready Product & Transport', color: 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30' }
       : { name: 'Create Bill', color: 'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-900/30' };
   }
 
@@ -98,7 +84,7 @@ export function DashboardPage() {
   const canAccessDeleted = currentUser?.pageAccess?.includes('Deleted POs');
 
   // ─── Sheet-backed State Lists ──────────────────────────────────────
-  const [purchaseOrders] = useSheetData('FMS', 'poNumber');
+  const [purchaseOrders] = useSheetData('fms-2', 'poNumber');
   const [vendorsList] = useSheetData('Vendors', 'id');
   const [canceledOrders] = useSheetData('Cancel', 'Timestamp');
 
@@ -123,34 +109,24 @@ export function DashboardPage() {
       .map(r => ({ ...r, actualDate: hasValue(r.actual2) ? r.actual2 : null, delay: r.delay2 }));
   }, [purchaseOrders]);
 
-  const displayCheckTransport = useMemo(() => {
+
+
+  const displaySupplyCheck = useMemo(() => {
     return purchaseOrders
       .filter(r => hasValue(r.planned3))
       .map(r => ({ ...r, actualDate: hasValue(r.actual3) ? r.actual3 : null, delay: r.delay3 }));
   }, [purchaseOrders]);
 
-  const displayPrintInvoice = useMemo(() => {
+  const displayApproveProduct = useMemo(() => {
     return purchaseOrders
       .filter(r => hasValue(r.planned4))
       .map(r => ({ ...r, actualDate: hasValue(r.actual4) ? r.actual4 : null, delay: r.delay4 }));
   }, [purchaseOrders]);
 
-  const displaySupplyCheck = useMemo(() => {
+  const displayPaymentProcessing = useMemo(() => {
     return purchaseOrders
       .filter(r => hasValue(r.planned5))
       .map(r => ({ ...r, actualDate: hasValue(r.actual5) ? r.actual5 : null, delay: r.delay5 }));
-  }, [purchaseOrders]);
-
-  const displayApproveProduct = useMemo(() => {
-    return purchaseOrders
-      .filter(r => hasValue(r.planned6))
-      .map(r => ({ ...r, actualDate: hasValue(r.actual6) ? r.actual6 : null, delay: r.delay6 }));
-  }, [purchaseOrders]);
-
-  const displayPaymentProcessing = useMemo(() => {
-    return purchaseOrders
-      .filter(r => hasValue(r.planned7))
-      .map(r => ({ ...r, actualDate: hasValue(r.actual7) ? r.actual7 : null, delay: r.delay7 }));
   }, [purchaseOrders]);
 
   const displayVendorsList = vendorsList;
@@ -165,11 +141,9 @@ export function DashboardPage() {
     paymentProcessing: displayPaymentProcessing,
     approveProduct: displayApproveProduct,
     supplyCheck: displaySupplyCheck,
-    printInvoice: displayPrintInvoice,
-    checkTransport: displayCheckTransport,
     readyProducts: displayReadyProducts,
     bills: displayBills
-  }), [displayPaymentProcessing, displayApproveProduct, displaySupplyCheck, displayPrintInvoice, displayCheckTransport, displayReadyProducts, displayBills]);
+  }), [displayPaymentProcessing, displayApproveProduct, displaySupplyCheck, displayReadyProducts, displayBills]);
 
   // Resolve Stage helper
   const getStageDetails = useMemo(() => {
@@ -210,8 +184,6 @@ export function DashboardPage() {
     const allWorkflowItems = [
       ...displayBills,
       ...displayReadyProducts,
-      ...displayCheckTransport,
-      ...displayPrintInvoice,
       ...displaySupplyCheck,
       ...displayApproveProduct,
       ...displayPaymentProcessing
@@ -231,16 +203,14 @@ export function DashboardPage() {
       : 0.0;
 
     return { onTimePercentage, avgDelayDays, totalCompletions };
-  }, [displayBills, displayReadyProducts, displayCheckTransport, displayPrintInvoice, displaySupplyCheck, displayApproveProduct, displayPaymentProcessing]);
+  }, [displayBills, displayReadyProducts, displaySupplyCheck, displayApproveProduct, displayPaymentProcessing]);
 
   // ─── Funnel Pipeline Stage Counts ──────────────────────────────────
   const funnelData = useMemo(() => {
     const pipelineStages = [
       { key: 'Generate PO', label: 'Generate PO', pending: 0, completed: 0 },
       { key: 'Create Bill', label: 'Create Bill', pending: 0, completed: 0 },
-      { key: 'Ready Product', label: 'Ready Product', pending: 0, completed: 0 },
-      { key: 'Check Transport', label: 'Check Transport', pending: 0, completed: 0 },
-      { key: 'Print Invoice', label: 'Print Invoice', pending: 0, completed: 0 },
+      { key: 'Ready Product & Transport', label: 'Ready Product & Transport', pending: 0, completed: 0 },
       { key: 'Supply Check', label: 'Supply Check', pending: 0, completed: 0 },
       { key: 'Approve Product', label: 'Approve Product', pending: 0, completed: 0 },
       { key: 'Payment Processing', label: 'Payment Processing', pending: 0, completed: 0 }

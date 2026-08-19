@@ -71,7 +71,7 @@ export function PaymentProcessingPage() {
     toast(msg || 'Sheet synchronization failed', 'error');
   };
 
-  const [fmsData, , loadingFms] = useSheetData('FMS', 'poNumber', { onError: handleSheetError });
+  const [fmsData, , loadingFms] = useSheetData('fms-2', 'poNumber', { onError: handleSheetError });
   const [paymentHistoryData, setPaymentHistoryData, loadingHistory] = useSheetData('payment history', '_row', { onError: handleSheetError });
   const [vendors] = useSheetData('Vendors', 'id');
   const [locationData] = useSheetData('Locations', 'name');
@@ -159,9 +159,9 @@ export function PaymentProcessingPage() {
     return map;
   }, [paymentHistoryData]);
 
-  // Qualification for Pending: planned7 set, not deleted, and NOT fully paid (totalReceived < billAmount)
+  // Qualification for Pending: planned5 set, not deleted, and NOT fully paid (totalReceived < billAmount)
   const qualifiesPending = (row) => {
-    if (!hasValue(row.planned7) || isDeleted(row)) return false;
+    if (!hasValue(row.planned5) || isDeleted(row)) return false;
     const poNo = String(row.poNumber || '').trim();
     const bill = Number(row.billAmount) || 0;
     const received = receivedByPo[poNo] || 0;
@@ -647,7 +647,7 @@ export function PaymentProcessingPage() {
 
                           <TableCell className="px-3 py-4">
                             <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                              <CalendarClock className="h-3.5 w-3.5 shrink-0" />{formatDate(item.planned7)}
+                              <CalendarClock className="h-3.5 w-3.5 shrink-0" />{formatDate(item.planned5)}
                             </span>
                           </TableCell>
 
@@ -980,7 +980,7 @@ export function PaymentProcessingPage() {
                 { label: 'Location',    value: detailDialog.item.location },
                 { label: 'Address',     value: detailDialog.item.address || '—' },
                 { label: 'Bill Amount', value: detailDialog.item.billAmount ? fmt(Number(detailDialog.item.billAmount)) : '—' },
-                { label: 'Planned 7',   value: formatDate(detailDialog.item.planned7) },
+                { label: 'Planned 5',   value: formatDate(detailDialog.item.planned5) },
                 { label: 'Updated By',  value: detailDialog.item.updatedBy || '—' },
               ].map((row) => (
                 <div key={row.label} className="flex items-start justify-between text-sm gap-4">

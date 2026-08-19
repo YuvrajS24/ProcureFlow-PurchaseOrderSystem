@@ -54,7 +54,7 @@ export function PrintInvoicePage() {
   const { toast } = useToast();
 
   // Load consolidated FMS sheet directly
-  const [fmsData, setFmsData] = useSheetData('FMS', 'poNumber');
+  const [fmsData, setFmsData] = useSheetData('fms-2', 'poNumber');
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');

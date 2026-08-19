@@ -48,13 +48,13 @@ function getValueForHeader(item, h) {
     return item.createdBy ?? item['Created By'] ?? '';
   }
   if (target === 'poreceiveddate') {
-    return item.poReceivedDate ?? row['PO Received Date'] ?? '';
+    return item.poReceivedDate ?? item['PO Received Date'] ?? '';
   }
   if (target === 'poexpireddate') {
-    return item.poExpiredDate ?? row['PO Expired Date'] ?? '';
+    return item.poExpiredDate ?? item['PO Expired Date'] ?? '';
   }
   if (target === 'popdfname') {
-    return item.poPdfName ?? row['PO PDF'] ?? '';
+    return item.poPdfName ?? item['PO PDF'] ?? '';
   }
   if (target === 'deletestatus') {
     return item.deleteStatus ?? item['Delete Status'] ?? '';
@@ -94,6 +94,15 @@ function getValueForHeader(item, h) {
   }
   if (target === 'billamount') {
     return item.billAmount ?? item['Bill Amount'] ?? '';
+  }
+  if (target === 'perunitprice') {
+    return item.perUnitPrice ?? item['Per Unit Price'] ?? '';
+  }
+  if (target === 'approvepoprice') {
+    return item.approvePoPrice ?? item['Approve Po Price'] ?? '';
+  }
+  if (target === 'approvepoqty') {
+    return item.approvePoQty ?? item['Approve Po Qty'] ?? '';
   }
 
   return '';
@@ -210,6 +219,12 @@ function normalizeRow(row) {
     'Supply Check Return Qty': row.returnQty ?? row['Return Qty'] ?? row['Supply Check Return Qty'] ?? row['Return Quantity'] ?? row.BG ?? row['BG'] ?? '',
     supplyCheck: row.supplyCheck ?? row['Supply Check'] ?? '',
     'Supply Check': row.supplyCheck ?? row['Supply Check'] ?? '',
+    perUnitPrice: row.perUnitPrice ?? row['Per Unit Price'] ?? '',
+    'Per Unit Price': row.perUnitPrice ?? row['Per Unit Price'] ?? '',
+    approvePoPrice: row.approvePoPrice ?? row['Approve Po Price'] ?? '',
+    'Approve Po Price': row.approvePoPrice ?? row['Approve Po Price'] ?? '',
+    approvePoQty: row.approvePoQty ?? row['Approve Po Qty'] ?? '',
+    'Approve Po Qty': row.approvePoQty ?? row['Approve Po Qty'] ?? '',
   };
 }
 
@@ -336,8 +351,15 @@ export function useSheetData(sheetName, keyField, { onError } = {}) {
   useEffect(() => {
     let alive = true;
 
+    const cache = getValidCache(sheetName);
+    // Skip network fetch on component mount if cache is very fresh (< 15 seconds old)
+    if (cache && (Date.now() - cache.fetchedAt < 15000)) {
+      setLoading(false);
+      return;
+    }
+
     // Show spinner only when there is no valid cached data
-    if (!getValidCache(sheetName)) {
+    if (!cache) {
       setLoading(true);
     }
 
@@ -439,10 +461,6 @@ export function useSheetData(sheetName, keyField, { onError } = {}) {
         for (let i = 0; i < headers.current.length; i++) {
           const h = headers.current[i];
           if (isReadOnlyField(h)) continue;
-          if (i === 55) col56Handled = true;
-          if (i === 56) col57Handled = true;
-          if (i === 57) col58Handled = true;
-          if (i === 58) col59Handled = true;
 
           const newVal = getValueForHeader(item, h);
           const oldVal = prev ? getValueForHeader(prev, h) : undefined;
@@ -450,30 +468,6 @@ export function useSheetData(sheetName, keyField, { onError } = {}) {
 
           const cellValue = Array.isArray(newVal) ? JSON.stringify(newVal) : String(newVal);
           cellUpdates.push({ rowIndex: item._row, columnIndex: i + 1, value: cellValue });
-        }
-
-        const bdVal = item.damageQty ?? item['Damage Qty'] ?? item['Damage Quantity'] ?? item.BD ?? item['BD'];
-        const prevBdVal = prev ? (prev.damageQty ?? prev['Damage Qty'] ?? prev['Damage Quantity'] ?? prev.BD ?? prev['BD']) : undefined;
-        if (!col56Handled && bdVal !== undefined && String(bdVal) !== String(prevBdVal ?? '') && item._row) {
-          cellUpdates.push({ rowIndex: item._row, columnIndex: 56, value: String(bdVal) });
-        }
-
-        const beVal = item.vehicleNumber ?? item['Vehicle Number'] ?? item['Vehicle number'] ?? item.BE ?? item['BE'];
-        const prevBeVal = prev ? (prev.vehicleNumber ?? prev['Vehicle Number'] ?? prev['Vehicle number'] ?? prev.BE ?? prev['BE']) : undefined;
-        if (!col57Handled && beVal !== undefined && String(beVal) !== String(prevBeVal ?? '') && item._row) {
-          cellUpdates.push({ rowIndex: item._row, columnIndex: 57, value: String(beVal) });
-        }
-
-        const bfVal = item.extraQty ?? item['Extra Qty'] ?? item.BF ?? item['BF'];
-        const prevBfVal = prev ? (prev.extraQty ?? prev['Extra Qty'] ?? prev.BF ?? prev['BF']) : undefined;
-        if (!col58Handled && bfVal !== undefined && String(bfVal) !== String(prevBfVal ?? '') && item._row) {
-          cellUpdates.push({ rowIndex: item._row, columnIndex: 58, value: String(bfVal) });
-        }
-
-        const bgVal = item.returnQty ?? item['Return Qty'] ?? item['Supply Check Return Qty'] ?? item.BG ?? item['BG'];
-        const prevBgVal = prev ? (prev.returnQty ?? prev['Return Qty'] ?? prev['Supply Check Return Qty'] ?? prev.BG ?? prev['BG']) : undefined;
-        if (!col59Handled && bgVal !== undefined && String(bgVal) !== String(prevBgVal ?? '') && item._row) {
-          cellUpdates.push({ rowIndex: item._row, columnIndex: 59, value: String(bgVal) });
         }
       }
 

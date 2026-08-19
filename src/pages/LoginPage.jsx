@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { fetchSheet } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,13 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, authError, setAuthError } = useAuth();
+
+  useEffect(() => {
+    // Pre-fetch critical sheets in the background to warm up caches while user is typing credentials
+    fetchSheet('fms-2').catch(() => {});
+    fetchSheet('Vendors').catch(() => {});
+    fetchSheet('Cancel').catch(() => {});
+  }, []);
   
   const navigate = useNavigate();
   const location = useLocation();
