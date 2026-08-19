@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { useSheetData } from '@/hooks/useSheetData';
@@ -23,6 +23,8 @@ import {
   AlertCircle,
   PackageCheck,
   MapPin,
+  Map,
+  Truck,
   CalendarClock,
   Eye,
   XCircle,
@@ -52,6 +54,11 @@ export function ReadyProductPage() {
   // Ready product records (read directly from FMS sheet)
   const [readyProducts, setReadyProducts] = useSheetData('fms-2', 'poNumber');
 
+  // Locations & Transporters from master sheet
+  const [locationData] = useSheetData('Locations', 'name');
+  const locations = locationData.map((l) => l.name);
+  const [transporters] = useSheetData('Transporters', 'id');
+
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
@@ -59,15 +66,62 @@ export function ReadyProductPage() {
   const [detailDialog, setDetailDialog] = useState({ open: false, item: null });
   const [cancelDialog, setCancelDialog] = useState({ open: false, item: null });
 
+  // Transport and details inputs
+  const [transporterName, setTransporterName] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [deliveryQty, setDeliveryQty] = useState('');
+  const [deliveryLocation, setDeliveryLocation] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [extraQtyInput, setExtraQtyInput] = useState('');
+
+  // Auto populate values when dialog opens
+  useEffect(() => {
+    if (confirmDialog.item) {
+      setTransporterName(confirmDialog.item.transporterName || confirmDialog.item.transporter || '');
+      setVehicleNumber(confirmDialog.item.vehicleNumber || '');
+      setDeliveryQty(String(confirmDialog.item.quantity || confirmDialog.item.totalQuantity || ''));
+      setDeliveryLocation(confirmDialog.item.deliveryLocation || confirmDialog.item.location || '');
+      setDeliveryAddress(confirmDialog.item.deliveryAddress || confirmDialog.item.address || '');
+      setExtraQtyInput(String(confirmDialog.item.extraQty || ''));
+    } else {
+      setTransporterName('');
+      setVehicleNumber('');
+      setDeliveryQty('');
+      setDeliveryLocation('');
+      setDeliveryAddress('');
+      setExtraQtyInput('');
+    }
+  }, [confirmDialog.item]);
+
   // ── Pending   = planned2 (col S) NOT null  AND  actual2 (col T) IS null
   // ── Completed = planned2 (col S) NOT null  AND  actual2 (col T) NOT null
   const isPending = (row) => hasValue(row.planned2) && !hasValue(row.actual2);
   const isCompleted = (row) => hasValue(row.planned2) && hasValue(row.actual2);
 
-  const [extraQtyInput, setExtraQtyInput] = useState('');
-
-  // ── Mark product as ready ──────────────────────────────────────────
+  // ── Mark product as ready & verify transport ──────────────────────
   const handleMarkReady = (item) => {
+    if (!transporterName || !transporterName.trim()) {
+      toast('Please select a transporter name', 'error');
+      return;
+    }
+    if (!vehicleNumber || !vehicleNumber.trim()) {
+      toast('Please enter a vehicle number', 'error');
+      return;
+    }
+    const enteredQty = parseInt(deliveryQty, 10);
+    if (isNaN(enteredQty) || enteredQty <= 0) {
+      toast('Please enter a valid quantity greater than 0', 'error');
+      return;
+    }
+    if (!deliveryLocation) {
+      toast('Please select a delivery location', 'error');
+      return;
+    }
+    if (!deliveryAddress || !deliveryAddress.trim()) {
+      toast('Please enter a delivery address', 'error');
+      return;
+    }
+
     const now = new Date();
     const nowTimestamp = makeTimestamp(now); // M/D/YYYY H:mm:ss format
     const planned3Date = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
@@ -75,12 +129,26 @@ export function ReadyProductPage() {
     const userName = currentUser ? currentUser.name || currentUser.username : 'System';
     const parsedExtra = extraQtyInput !== '' && !isNaN(parseInt(extraQtyInput, 10)) ? parseInt(extraQtyInput, 10) : 0;
 
+    const selectedTransporter = transporterName.trim();
     const updated = readyProducts.map((r) =>
       r.poNumber === item.poNumber
         ? {
             ...r,
             actual2: nowTimestamp,
             updatedBy: userName,
+            transporterName: selectedTransporter,
+            'Transporter name': selectedTransporter,
+            'Transporter Name': selectedTransporter,
+            'Transporter': selectedTransporter,
+            vehicleNumber: vehicleNumber.trim(),
+            'Vehicle Number': vehicleNumber.trim(),
+            quantity: enteredQty,
+            deliveryLocation: deliveryLocation,
+            'Delivery location': deliveryLocation,
+            'Delivery Location': deliveryLocation,
+            deliveryAddress: deliveryAddress.trim(),
+            'Delivery address': deliveryAddress.trim(),
+            'Delivery Address': deliveryAddress.trim(),
             'Extra Qty': parsedExtra,
             'Extra Quantity': parsedExtra,
             extraQty: parsedExtra,
@@ -93,7 +161,7 @@ export function ReadyProductPage() {
     );
     setReadyProducts(updated);
 
-    toast(`Product for ${item.poNumber} marked as ready!`, 'success');
+    toast(`Product & transport for ${item.poNumber} verified!`, 'success');
     setConfirmDialog({ open: false, item: null });
   };
 
@@ -146,7 +214,7 @@ export function ReadyProductPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="text-left">
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
-            Ready Product
+            Ready Product & Transport
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
             Verify product readiness after billing is complete. Mark products as ready for the next stage.
@@ -286,14 +354,12 @@ export function ReadyProductPage() {
                             <>
                               <Button
                                 onClick={() => {
-                                  const existingExtra = item.extraQty ?? item['Extra Qty'] ?? item.BF ?? '';
-                                  setExtraQtyInput(existingExtra !== '' ? String(existingExtra) : '');
                                   setConfirmDialog({ open: true, item });
                                 }}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
                               >
-                                <PackageCheck className="h-3.5 w-3.5" />
-                                Mark Ready
+                                <Truck className="h-3.5 w-3.5" />
+                                Mark Ready & Transport
                               </Button>
                               <Button
                                 variant="outline"
@@ -410,71 +476,148 @@ export function ReadyProductPage() {
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, item: null })}>
         <DialogContent
           onCloseAutoFocus={(e) => e.preventDefault()}
-          className="sm:max-w-[440px] bg-card border-border shadow-xl rounded-2xl p-6"
+          className="sm:max-w-[540px] bg-card border-border shadow-xl rounded-2xl p-6"
         >
           <DialogHeader className="text-left mb-2">
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <PackageCheck className="h-5 w-5 text-emerald-500" />
-              Confirm Product Ready
+              Confirm Product & Transport Ready
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground mt-1">
-              This will mark the product as ready and move it to Check Transport.
+              Verify quantities and transport details before moving this order to the next stage.
             </DialogDescription>
           </DialogHeader>
 
           {confirmDialog.item && (
-            <div className="space-y-3 py-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">PO Number</span>
-                <span className="font-semibold text-primary">{confirmDialog.item.poNumber}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Vendor</span>
-                <span className="font-medium">{confirmDialog.item.vendorName}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Planned 2</span>
-                <span className="font-medium">{formatDate(confirmDialog.item.planned2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Processed By</span>
-                <span className="font-medium">{currentUser ? currentUser.name || currentUser.username : 'System'}</span>
+            <div className="space-y-4 py-1 text-left">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs px-0.5 pb-3 border-b border-border">
+                <div className="flex justify-between"><span className="text-muted-foreground">PO Number:</span> <span className="font-semibold text-primary truncate ml-1">{confirmDialog.item.poNumber}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Vendor:</span> <span className="font-medium truncate ml-1">{confirmDialog.item.vendorName}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Planned 2:</span> <span className="font-medium ml-1">{formatDate(confirmDialog.item.planned2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Processed By:</span> <span className="font-medium ml-1">{currentUser ? currentUser.name || currentUser.username : 'System'}</span></div>
               </div>
 
-              <div className="space-y-1.5 text-left pt-2 border-t border-border">
-                <Label className="text-xs font-semibold text-muted-foreground">Extra Quantity</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={extraQtyInput}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || /^\d+$/.test(val)) {
-                      setExtraQtyInput(val);
-                    }
-                  }}
-                  placeholder="Enter extra quantity (integer e.g. 100)"
-                  className="rounded-xl bg-background border-input text-xs h-10"
-                />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                {/* Row 1: Transporter & Vehicle */}
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                    <Truck className="h-3 w-3" />
+                    Transporter Name*
+                  </Label>
+                  <select
+                    value={transporterName}
+                    onChange={(e) => setTransporterName(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-xs text-foreground shadow-xs outline-none focus:border-ring focus:ring-3 focus:ring-ring/50 dark:bg-input/30"
+                  >
+                    <option value="" disabled>Select transporter</option>
+                    {transporters.map((t) => (
+                      <option key={t.id || t.name} value={t.name}>
+                        {t.name}
+                      </option>
+                    ))}
+                    {transporterName && !transporters.some(t => t.name === transporterName) && (
+                      <option value={transporterName}>{transporterName}</option>
+                    )}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                    <Truck className="h-3 w-3" />
+                    Vehicle Number*
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. CG06GB34XX"
+                    value={vehicleNumber}
+                    onChange={(e) => setVehicleNumber(e.target.value)}
+                    className="rounded-xl bg-background border-input text-xs h-9"
+                  />
+                </div>
+
+                {/* Row 2: Delivery Qty & Extra Qty */}
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground">Delivery Quantity*</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={deliveryQty}
+                    onChange={(e) => setDeliveryQty(e.target.value)}
+                    className="rounded-xl bg-background border-input text-xs h-9"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground">Extra Quantity</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={extraQtyInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d+$/.test(val)) {
+                        setExtraQtyInput(val);
+                      }
+                    }}
+                    placeholder="e.g. 100"
+                    className="rounded-xl bg-background border-input text-xs h-9"
+                  />
+                </div>
+
+                {/* Row 3: Location & Address */}
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Delivery Location*
+                  </Label>
+                  <select
+                    value={deliveryLocation}
+                    onChange={(e) => setDeliveryLocation(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-xs text-foreground shadow-xs outline-none focus:border-ring focus:ring-3 focus:ring-ring/50 dark:bg-input/30"
+                  >
+                    <option value="" disabled>Select location</option>
+                    {locations.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                    <Map className="h-3 w-3" />
+                    Delivery Address*
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="Enter delivery address..."
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    className="rounded-xl bg-background border-input text-xs h-9"
+                    required
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          <DialogFooter className="mt-4 gap-2">
+          <DialogFooter className="mt-5 gap-2 flex-row justify-end border-t border-border pt-4">
             <Button
               variant="outline"
               onClick={() => setConfirmDialog({ open: false, item: null })}
-              className="border-border hover:bg-accent rounded-xl cursor-pointer"
+              className="border-border hover:bg-accent rounded-xl cursor-pointer text-xs h-9 px-4"
             >
               Cancel
             </Button>
             <Button
               onClick={() => confirmDialog.item && handleMarkReady(confirmDialog.item)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5 text-xs h-9 px-4"
             >
-              <PackageCheck className="h-4 w-4" />
-              Confirm Ready
+              <Truck className="h-4 w-4" />
+              Confirm Ready & Transport
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -503,6 +646,14 @@ export function ReadyProductPage() {
                 { label: 'Address', value: detailDialog.item.address },
                 { label: 'Planned Date', value: formatDate(detailDialog.item.planned2) },
                 { label: 'Actual Date', value: detailDialog.item.actual2 ? formatDate(detailDialog.item.actual2) : 'Not yet' },
+                ...(detailDialog.item.actual2 ? [
+                  { label: 'Transporter', value: detailDialog.item.transporterName || detailDialog.item.transporter || '—' },
+                  { label: 'Vehicle Number', value: detailDialog.item.vehicleNumber || '—' },
+                  { label: 'Delivery Qty', value: detailDialog.item.quantity?.toLocaleString() || '—' },
+                  { label: 'Delivery Location', value: detailDialog.item.deliveryLocation || '—' },
+                  { label: 'Delivery Address', value: detailDialog.item.deliveryAddress || '—' },
+                  { label: 'Extra Qty', value: detailDialog.item.extraQty?.toLocaleString() || '0' },
+                ] : []),
                 { label: 'Status', value: detailDialog.item.actual2 ? 'Completed' : 'Pending' },
                 { label: 'Delay', value: detailDialog.item.actual2 ? ((detailDialog.item.delay2 || 0) === 0 ? 'On time' : `${detailDialog.item.delay2} day(s)`) : '—' },
                 { label: 'Updated By', value: detailDialog.item.updatedBy || '—' },

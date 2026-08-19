@@ -23,7 +23,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ toast: showToast }}>
       {children}
       {/* Toast Render Container - positioned in top right */}
-      <div className="fixed top-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+      <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}

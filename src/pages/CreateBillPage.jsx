@@ -911,9 +911,15 @@ export function CreateBillPage() {
                     setBillAmountInput(e.target.value);
                     const amount = parseFloat(e.target.value);
                     const supplyQty = parseFloat(supplyQuantity2Input);
-                    const qty = !isNaN(supplyQty) && supplyQty > 0 ? supplyQty : (Number(createBillDialog.row.totalQuantity) || 1);
-                    if (!isNaN(amount) && qty) {
-                      setPerUnitPriceInput((amount / qty).toFixed(2));
+                    if (!isNaN(amount) && !isNaN(supplyQty) && supplyQty > 0) {
+                      setPerUnitPriceInput((amount / supplyQty).toFixed(2));
+                    } else {
+                      setPerUnitPriceInput('');
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                      e.preventDefault();
                     }
                   }}
                   placeholder="e.g. 50000"
@@ -923,15 +929,13 @@ export function CreateBillPage() {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Per Unit Price*</Label>
+                <Label className="text-[11px] font-semibold text-muted-foreground">Per Unit Price* (Calculated)</Label>
                 <Input
                   type="number"
-                  min="0"
-                  step="0.01"
                   value={perUnitPriceInput}
-                  onChange={(e) => setPerUnitPriceInput(e.target.value)}
+                  disabled
                   placeholder="e.g. 250"
-                  className="rounded-xl bg-background border-input text-xs h-9"
+                  className="rounded-xl bg-neutral-100 dark:bg-neutral-800 border-input text-xs h-9 cursor-not-allowed opacity-80 font-semibold"
                   required
                 />
               </div>
@@ -970,9 +974,10 @@ export function CreateBillPage() {
                     setSupplyQuantity2Input(e.target.value);
                     const supplyQty = parseFloat(e.target.value);
                     const amount = parseFloat(billAmountInput);
-                    const qty = !isNaN(supplyQty) && supplyQty > 0 ? supplyQty : (Number(createBillDialog.row.totalQuantity) || 1);
-                    if (!isNaN(amount) && qty) {
-                      setPerUnitPriceInput((amount / qty).toFixed(2));
+                    if (!isNaN(amount) && !isNaN(supplyQty) && supplyQty > 0) {
+                      setPerUnitPriceInput((amount / supplyQty).toFixed(2));
+                    } else {
+                      setPerUnitPriceInput('');
                     }
                   }}
                   placeholder="e.g. 200"

@@ -74,6 +74,8 @@ export function SupplyCheckPage() {
     const planned4Timestamp = makeTimestamp(planned4Date);
     const userName = currentUser ? currentUser.name || currentUser.username : 'System';
     const totalQty = Number(item.totalQuantity || item['Total Quantity'] || item.quantity || item['Quantity'] || 0);
+    const extraQty = Number(item.extraQty ?? item['Extra Qty'] ?? item.BF ?? 0);
+    const maxAllowedQty = totalQty + extraQty;
     const parsedDamage = damageQtyInput !== '' ? parseFloat(damageQtyInput) : 0;
     const parsedReturn = returnQtyInput !== '' ? parseFloat(returnQtyInput) : 0;
     const parsedExtra = extraQtyInput !== '' ? parseFloat(extraQtyInput) : 0;
@@ -83,8 +85,8 @@ export function SupplyCheckPage() {
         toast('Damaged quantity cannot be negative', 'error');
         return;
       }
-      if (totalQty > 0 && parsedDamage > totalQty) {
-        toast(`Damaged quantity (${parsedDamage}) cannot be greater than total quantity (${totalQty})`, 'error');
+      if (maxAllowedQty > 0 && parsedDamage > maxAllowedQty) {
+        toast(`Damaged quantity (${parsedDamage}) cannot be greater than total quantity (${maxAllowedQty})`, 'error');
         return;
       }
     }
@@ -94,8 +96,8 @@ export function SupplyCheckPage() {
         toast('Return quantity cannot be negative', 'error');
         return;
       }
-      if (totalQty > 0 && parsedReturn > totalQty) {
-        toast(`Return quantity (${parsedReturn}) cannot be greater than total quantity (${totalQty})`, 'error');
+      if (maxAllowedQty > 0 && parsedReturn > maxAllowedQty) {
+        toast(`Return quantity (${parsedReturn}) cannot be greater than total quantity (${maxAllowedQty})`, 'error');
         return;
       }
     }
@@ -419,11 +421,13 @@ export function SupplyCheckPage() {
 
           {confirmDialog.item && (() => {
             const totalQty = Number(confirmDialog.item.totalQuantity || confirmDialog.item['Total Quantity'] || confirmDialog.item.quantity || confirmDialog.item['Quantity'] || 0);
+            const extraQty = Number(confirmDialog.item.extraQty ?? confirmDialog.item['Extra Qty'] ?? confirmDialog.item.BF ?? 0);
+            const calculatedTotalQty = totalQty + extraQty;
             const damageVal = damageQtyInput !== '' ? parseFloat(damageQtyInput) : 0;
             const returnVal = returnQtyInput !== '' ? parseFloat(returnQtyInput) : 0;
             const extraVal = extraQtyInput !== '' ? parseFloat(extraQtyInput) : 0;
-            const isDamageInvalid = damageQtyInput !== '' && (isNaN(damageVal) || damageVal < 0 || (totalQty > 0 && damageVal > totalQty));
-            const isReturnInvalid = returnQtyInput !== '' && (isNaN(returnVal) || returnVal < 0 || (totalQty > 0 && returnVal > totalQty));
+            const isDamageInvalid = damageQtyInput !== '' && (isNaN(damageVal) || damageVal < 0 || (calculatedTotalQty > 0 && damageVal > calculatedTotalQty));
+            const isReturnInvalid = returnQtyInput !== '' && (isNaN(returnVal) || returnVal < 0 || (calculatedTotalQty > 0 && returnVal > calculatedTotalQty));
             const isExtraInvalid = extraQtyInput !== '' && (isNaN(extraVal) || extraVal < 0);
 
             return (
@@ -439,17 +443,19 @@ export function SupplyCheckPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Total Quantity</span>
-                    <span className="font-medium">{totalQty > 0 ? totalQty.toLocaleString() : '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Planned Date</span>
-                    <span className="font-medium">{formatDate(confirmDialog.item.planned3)}</span>
+                    <span className="font-semibold text-foreground">
+                      {calculatedTotalQty > 0 ? calculatedTotalQty.toLocaleString() : '—'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Extra Qty</span>
                     <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      {confirmDialog.item.extraQty ?? confirmDialog.item['Extra Qty'] ?? confirmDialog.item.BF ?? 0}
+                      {extraQty}
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Planned Date</span>
+                    <span className="font-medium">{formatDate(confirmDialog.item.planned3)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Verified By</span>

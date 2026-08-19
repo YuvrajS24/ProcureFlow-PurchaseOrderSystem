@@ -33,7 +33,16 @@ import { makeTimestamp, formatDisplayDate, hasValue } from '@/utils/dateUtils';
 // ─── Helpers ────────────────────────────────────────────────────────
 
 const formatDate = (isoString) => {
-  return formatDisplayDate(isoString, true);
+  if (!isoString) return '—';
+  const num = Number(isoString);
+  if (!isNaN(num) && num > 30000 && num < 60000) {
+    const baseDate = new Date(1899, 11, 30);
+    const ms = num * 24 * 60 * 60 * 1000;
+    const d = new Date(baseDate.getTime() + ms);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+  }
+  return formatDisplayDate(isoString, false);
 };
 
 const TABS = [
@@ -84,6 +93,12 @@ export function ApproveProductPage() {
     const planned5Date = addWorkdays(now, 4);
     const planned5Timestamp = makeTimestamp(planned5Date);
     const userName = currentUser ? currentUser.name || currentUser.username : 'System';
+    const rawPoQty = Number(item.totalQuantity || item['Total Quantity'] || item.quantity || item['Quantity'] || 0);
+    const extraQty = Number(item.extraQty ?? item['Extra Qty'] ?? item.BF ?? 0);
+    const damageQty = Number(item.damageQty ?? item['Damage Qty'] ?? item.BD ?? 0);
+    const returnQty = Number(item.returnQty ?? item['Return Qty'] ?? item['Supply Check Return Qty'] ?? item.BG ?? 0);
+    const calculatedNetQty = rawPoQty + extraQty - damageQty - returnQty;
+    const shortageQty = rawPoQty > calculatedNetQty ? (rawPoQty - calculatedNetQty) : 0;
 
     // Update FMS directly
     const updated = fmsData.map((r) =>
@@ -94,6 +109,10 @@ export function ApproveProductPage() {
           'Approve Po Price': parseFloat(approvePoPriceInput) || '',
           approvePoQty: parseFloat(approvePoQtyInput) || '',
           'Approve Po Qty': parseFloat(approvePoQtyInput) || '',
+          pendingQty: 0,
+          'Pending Qty': 0,
+          cancelQty: shortageQty,
+          'Cancel Qty': shortageQty,
           actual4: nowTimestamp,
           planned5: planned5Timestamp,
           'Planned 5': planned5Timestamp,
@@ -252,14 +271,23 @@ export function ApproveProductPage() {
                   visibleItems.map((item) => {
                     const rawPoQty = Number(item.totalQuantity || item['Total Quantity'] || item.quantity || item['Quantity'] || 0);
                     const extraQty = Number(item.extraQty ?? item['Extra Qty'] ?? item.BF ?? 0);
+                    const damageQty = Number(item.damageQty ?? item['Damage Qty'] ?? item.BD ?? 0);
                     const returnQty = Number(item.returnQty ?? item['Return Qty'] ?? item['Supply Check Return Qty'] ?? item.BG ?? 0);
-                    const calculatedPoQty = rawPoQty + extraQty - returnQty;
+                    const calculatedPoQty = rawPoQty + extraQty - damageQty - returnQty;
+
+                    const displayPendingQty = hasValue(item.actual4)
+                      ? Number(item.pendingQty || item['Pending Qty'] || 0)
+                      : calculatedPoQty;
+
+                    const displayCancelQty = hasValue(item.actual4)
+                      ? Number(item.cancelQty || item['Cancel Qty'] || 0)
+                      : (rawPoQty > calculatedPoQty ? (rawPoQty - calculatedPoQty) : 0);
 
                     return (
                       <TableRow key={item.poNumber} className="hover:bg-accent/40 border-b border-border transition-colors">
                         <TableCell className="pl-4 md:pl-6 py-4 text-left">
                           <div className="flex items-center gap-1.5">
-                            {!hasValue(item.actual6) && (
+                            {!hasValue(item.actual4) && (
                               <>
                                 <Button onClick={() => {
                                   setApprovePoPriceInput(item.perUnitPrice || item['Per Unit Price'] || '');
@@ -284,10 +312,10 @@ export function ApproveProductPage() {
                         <TableCell className="pl-4 md:pl-6 py-4 text-left font-semibold text-primary text-xs sm:text-sm">{item.poNumber}</TableCell>
                         <TableCell className="py-4 text-left text-xs sm:text-sm font-medium text-foreground">{item.vendorName}</TableCell>
                         <TableCell className="py-4 text-left font-bold text-xs sm:text-sm text-foreground">
-                          {calculatedPoQty.toLocaleString()}
+                          {rawPoQty.toLocaleString()}
                         </TableCell>
                         <TableCell className="py-4 text-center font-semibold text-xs sm:text-sm text-rose-600 dark:text-rose-400">
-                          {item.damageQty ?? item['Damage Qty'] ?? item.BD ?? 0}
+                          {damageQty}
                         </TableCell>
                         <TableCell className="py-4 text-center font-semibold text-xs sm:text-sm text-blue-600 dark:text-blue-400">
                           {extraQty}
@@ -295,16 +323,12 @@ export function ApproveProductPage() {
                         <TableCell className="py-4 text-center font-semibold text-xs sm:text-sm text-purple-600 dark:text-purple-400">
                           {returnQty}
                         </TableCell>
-                      <TableCell className="py-4 text-left font-semibold text-xs sm:text-sm text-foreground">
-                        {(item['Pending Qty'] != null && item['Pending Qty'] !== '')
-                          ? Number(item['Pending Qty']).toLocaleString()
-                          : (item.pendingQty != null && item.pendingQty !== '' ? Number(item.pendingQty).toLocaleString() : '0')}
-                      </TableCell>
-                      <TableCell className="py-4 text-left font-semibold text-xs sm:text-sm text-foreground">
-                        {(item['Cancel Qty'] != null && item['Cancel Qty'] !== '')
-                          ? Number(item['Cancel Qty']).toLocaleString()
-                          : (item.cancelQty != null && item.cancelQty !== '' ? Number(item.cancelQty).toLocaleString() : '0')}
-                      </TableCell>
+                        <TableCell className="py-4 text-left font-semibold text-xs sm:text-sm text-foreground">
+                          {displayPendingQty.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="py-4 text-left font-semibold text-xs sm:text-sm text-foreground">
+                          {displayCancelQty.toLocaleString()}
+                        </TableCell>
                       <TableCell className="py-4 text-left">
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-border">
                           <MapPin className="h-2.5 w-2.5 text-muted-foreground" />{item.location}
@@ -376,65 +400,123 @@ export function ApproveProductPage() {
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, item: null })}>
         <DialogContent
           onCloseAutoFocus={(e) => e.preventDefault()}
-          className="sm:max-w-[440px] bg-card border-border shadow-xl rounded-2xl p-6"
+          className="sm:max-w-[540px] bg-card border-border shadow-xl rounded-2xl p-6"
         >
-          <DialogHeader className="text-left mb-2">
-            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <CheckSquare className="h-5 w-5 text-emerald-500" />Confirm Product Approval
+          <DialogHeader className="text-left mb-1 border-b border-border/40 pb-2">
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-1.5">
+              <CheckSquare className="h-4.5 w-4.5 text-emerald-500" />Confirm Product Approval
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground mt-1">
-              This will approve the product and stamp Actual 4 (col AH) in the FMS sheet.
-            </DialogDescription>
           </DialogHeader>
-          {confirmDialog.item && (
-            <div className="space-y-3 py-3 text-left">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">PO Number</span>
-                <span className="font-semibold text-primary">{confirmDialog.item.poNumber}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Vendor</span>
-                <span className="font-medium">{confirmDialog.item.vendorName}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Planned Date</span>
-                <span className="font-medium">{formatDate(confirmDialog.item.planned4)}</span>
-              </div>
-              
-              <div className="pt-2">
-                <label className="text-[11px] font-semibold text-muted-foreground">Approve PO Price*</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={approvePoPriceInput}
-                  onChange={(e) => setApprovePoPriceInput(e.target.value)}
-                  className="rounded-xl bg-background border-input text-xs h-9 mt-1"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground">Approve PO Qty*</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={approvePoQtyInput}
-                  onChange={(e) => setApprovePoQtyInput(e.target.value)}
-                  className="rounded-xl bg-background border-input text-xs h-9 mt-1"
-                  required
-                />
-              </div>
+          {confirmDialog.item && (() => {
+            const rawPoQty = Number(confirmDialog.item.totalQuantity || confirmDialog.item['Total Quantity'] || confirmDialog.item.quantity || confirmDialog.item['Quantity'] || 0);
+            const extraQty = Number(confirmDialog.item.extraQty ?? confirmDialog.item['Extra Qty'] ?? confirmDialog.item.BF ?? 0);
+            const damageQty = Number(confirmDialog.item.damageQty ?? confirmDialog.item['Damage Qty'] ?? confirmDialog.item.BD ?? 0);
+            const returnQty = Number(confirmDialog.item.returnQty ?? confirmDialog.item['Return Qty'] ?? confirmDialog.item['Supply Check Return Qty'] ?? confirmDialog.item.BG ?? 0);
+            const calculatedNetQty = rawPoQty + extraQty - damageQty - returnQty;
+            const shortageQty = rawPoQty > calculatedNetQty ? (rawPoQty - calculatedNetQty) : 0;
 
-              <div className="flex items-center justify-between text-sm pt-2">
-                <span className="text-muted-foreground">Approved By</span>
-                <span className="font-medium">{currentUser ? currentUser.name || currentUser.username : 'System'}</span>
+            const priceNum = Number(approvePoPriceInput) || 0;
+            const qtyNum = Number(approvePoQtyInput) || 0;
+            const finalApprovedAmount = priceNum * qtyNum;
+
+            return (
+              <div className="space-y-4 py-1 text-left flex flex-col justify-between">
+                {/* ── 2-Column Dashboard Details (Expanded & Larger Fonts) ── */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Left Column: PO & Vendor Info */}
+                  <div className="space-y-4 bg-neutral-50/50 dark:bg-neutral-900/30 p-5 rounded-xl border border-border/80 flex flex-col justify-between min-h-[260px]">
+                    <div>
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider border-b border-border/20 pb-1.5 mb-3">PO Details</h3>
+                      
+                      <div className="space-y-3.5">
+                        <div>
+                          <span className="text-[11px] text-muted-foreground block font-semibold">PO Number</span>
+                          <span className="text-base font-extrabold text-primary">{confirmDialog.item.poNumber}</span>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground block font-semibold">Vendor</span>
+                          <span className="text-sm font-bold text-foreground truncate block">{confirmDialog.item.vendorName}</span>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground block font-semibold">Location</span>
+                          <span className="text-sm font-semibold text-foreground">{confirmDialog.item.location || '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3.5 border-t border-border/20 pt-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground block font-semibold">Planned Date</span>
+                          <span className="text-xs font-bold text-foreground">{formatDate(confirmDialog.item.planned4)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground block font-semibold">Updated By</span>
+                          <span className="text-xs font-bold text-foreground">{confirmDialog.item.updatedBy || '—'}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          Pending Approval
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Quantity Reconciliation */}
+                  <div className="space-y-4 bg-neutral-50/50 dark:bg-neutral-900/30 p-5 rounded-xl border border-border/80 flex flex-col justify-between min-h-[260px]">
+                    <div>
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider border-b border-border/20 pb-1.5 mb-3">Quantity Details</h3>
+                      
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground text-xs font-medium">PO Quantity:</span>
+                          <span className="font-bold text-foreground text-sm">{rawPoQty.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground text-xs font-medium">Extra Quantity:</span>
+                          <span className="font-bold text-blue-600 dark:text-blue-400 text-sm">+{extraQty}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground text-xs font-medium">Damage Qty:</span>
+                          <span className="font-bold text-rose-600 dark:text-rose-400 text-sm">-{damageQty}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground text-xs font-medium">Return Qty:</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400 text-sm">-{returnQty}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 border-t border-border/20 pt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-bold text-xs">Net Approved:</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-base">{calculatedNetQty.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground text-xs font-semibold">Canceled Qty:</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400 text-sm">{shortageQty.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Thinner Billing Summary Card (Sticked to bottom, reduced height) ── */}
+                <div className="bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl p-3 px-4 flex justify-between items-center shadow-md mt-4">
+                  <div className="space-y-0.5 text-left">
+                    <span className="text-[9px] text-emerald-100 font-bold uppercase tracking-wider block">Total Approved Bill Amount</span>
+                    <span className="text-[11px] text-emerald-100/90 block font-medium">({calculatedNetQty.toLocaleString()} units × ₹{priceNum.toLocaleString(undefined, { minimumFractionDigits: 2 })} / unit)</span>
+                  </div>
+                  <span className="text-xl font-black tracking-tight">
+                    ₹{finalApprovedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
-          <DialogFooter className="mt-4 gap-2">
-            <Button variant="outline" onClick={() => setConfirmDialog({ open: false, item: null })} className="border-border hover:bg-accent rounded-xl cursor-pointer">Cancel</Button>
-            <Button onClick={() => confirmDialog.item && handleMarkComplete(confirmDialog.item)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5">
+            );
+          })()}
+          <DialogFooter className="mt-4 gap-2 border-t border-border/30 pt-4">
+            <Button variant="outline" onClick={() => setConfirmDialog({ open: false, item: null })} className="border-border hover:bg-accent rounded-xl cursor-pointer text-xs h-9 px-4">Cancel</Button>
+            <Button onClick={() => confirmDialog.item && handleMarkComplete(confirmDialog.item)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5 text-xs h-9 px-4 font-semibold">
               <CheckSquare className="h-4 w-4" />Confirm Approval
             </Button>
           </DialogFooter>

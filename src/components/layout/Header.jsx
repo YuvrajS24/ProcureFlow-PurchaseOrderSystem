@@ -17,7 +17,7 @@ const LABEL_MAP = {
   'settings': 'Settings',
   'generate-po': 'Generate PO',
   'create-bill': 'Create Bill',
-  'ready-product': 'Ready Product',
+  'ready-product': 'Ready Product & Transport',
   'check-transport': 'Check Transport',
   'print-invoice': 'Print Invoice',
   'supply-check': 'Supply Check',
