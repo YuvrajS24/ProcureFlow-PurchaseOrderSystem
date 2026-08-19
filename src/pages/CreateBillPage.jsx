@@ -37,7 +37,16 @@ import { CancelOrderDialog } from '@/components/shared/CancelOrderDialog';
 
 /** Format ISO/timestamp string → DD-MM-YYYY HH:mm:ss date string */
 const formatDate = (isoString) => {
-  return formatDisplayDate(isoString, true);
+  if (!isoString) return '—';
+  const num = Number(isoString);
+  if (!isNaN(num) && num > 30000 && num < 60000) {
+    const baseDate = new Date(1899, 11, 30);
+    const ms = num * 24 * 60 * 60 * 1000;
+    const d = new Date(baseDate.getTime() + ms);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+  }
+  return formatDisplayDate(isoString, false);
 };
 
 const formatAmount = (amount) => {
