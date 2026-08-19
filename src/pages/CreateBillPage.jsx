@@ -890,7 +890,8 @@ export function CreateBillPage() {
           </DialogHeader>
 
           {createBillDialog.row && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 py-2 text-left">
+              {/* Row 1 */}
               <div className="space-y-1">
                 <Label className="text-[11px] font-semibold text-muted-foreground">Bill Number</Label>
                 <Input
@@ -900,6 +901,18 @@ export function CreateBillPage() {
                 />
               </div>
 
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Bill Date*</Label>
+                <Input
+                  type="date"
+                  value={billDateInput}
+                  onChange={(e) => setBillDateInput(e.target.value)}
+                  className="rounded-xl bg-background border-input text-xs h-9"
+                  required
+                />
+              </div>
+
+              {/* Row 2 */}
               <div className="space-y-1">
                 <Label className="text-[11px] font-semibold text-muted-foreground">Bill Amount*</Label>
                 <Input
@@ -929,42 +942,6 @@ export function CreateBillPage() {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Per Unit Price* (Calculated)</Label>
-                <Input
-                  type="number"
-                  value={perUnitPriceInput}
-                  disabled
-                  placeholder="e.g. 250"
-                  className="rounded-xl bg-neutral-100 dark:bg-neutral-800 border-input text-xs h-9 cursor-not-allowed opacity-80 font-semibold"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1 text-left sm:col-span-2">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Bill Date*</Label>
-                <Input
-                  type="date"
-                  value={billDateInput}
-                  onChange={(e) => setBillDateInput(e.target.value)}
-                  className="rounded-xl bg-background border-input text-xs h-9"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1 text-left">
-                <Label className="text-[11px] font-semibold text-muted-foreground">Receive Amount</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={receivedAmountInput}
-                  onChange={(e) => setReceivedAmountInput(e.target.value)}
-                  placeholder="e.g. 45000"
-                  className="rounded-xl bg-background border-input text-xs h-9"
-                />
-              </div>
-
-              <div className="space-y-1 text-left sm:col-span-2">
                 <Label className="text-[11px] font-semibold text-muted-foreground">Supply Quantity</Label>
                 <Input
                   type="number"
@@ -984,6 +961,33 @@ export function CreateBillPage() {
                   className="rounded-xl bg-background border-input text-xs h-9"
                 />
               </div>
+
+              {/* Row 3 */}
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Per Unit Price* (Calculated)</Label>
+                <Input
+                  type="number"
+                  value={perUnitPriceInput}
+                  disabled
+                  placeholder="e.g. 250"
+                  className="rounded-xl bg-neutral-100 dark:bg-neutral-800 border-input text-xs h-9 cursor-not-allowed opacity-80 font-semibold"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">Receive Amount</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={receivedAmountInput}
+                  onChange={(e) => setReceivedAmountInput(e.target.value)}
+                  placeholder="e.g. 45000"
+                  className="rounded-xl bg-background border-input text-xs h-9"
+                />
+              </div>
+
 
               {/* Full Width: Narration */}
               <div className="space-y-1 text-left sm:col-span-2">
