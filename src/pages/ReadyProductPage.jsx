@@ -316,9 +316,11 @@ export function ReadyProductPage() {
             <Table>
               <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border">
                 <TableRow>
-                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
-                    Actions
-                  </TableHead>
+                  {activeTab !== 'history' && (
+                    <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
+                      Actions
+                    </TableHead>
+                  )}
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
                     PO Number
                   </TableHead>
@@ -353,36 +355,38 @@ export function ReadyProductPage() {
                   filteredItems.map((item) => (
                     <TableRow
                       key={item.poNumber}
-                      className="hover:bg-accent/40 border-b border-border transition-colors"
+                      onClick={() => activeTab === 'history' && setDetailDialog({ open: true, item })}
+                      className={`hover:bg-accent/40 border-b border-border transition-colors ${activeTab === 'history' ? 'cursor-pointer' : ''}`}
                     >
                       {/* Actions */}
-                      <TableCell className="pl-4 md:pl-6 py-4 text-left">
-                        <div className="flex items-center gap-1.5">
-
-                          {!hasValue(item.actual2) && (
-                            <>
-                              <Button
-                                onClick={() => {
-                                  setConfirmDialog({ open: true, item });
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
-                              >
-                                <Truck className="h-3.5 w-3.5" />
-                                Mark Ready & Transport
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => setCancelDialog({ open: true, item })}
-                                className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30 gap-1 text-[11px] rounded-xl px-2.5 h-8 cursor-pointer"
-                                title="Cancel PO"
-                              >
-                                <XCircle className="h-3.5 w-3.5" />
-                                Cancel
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
+                      {activeTab !== 'history' && (
+                        <TableCell className="pl-4 md:pl-6 py-4 text-left">
+                          <div className="flex items-center gap-1.5">
+                            {!hasValue(item.actual2) && (
+                              <>
+                                <Button
+                                  onClick={() => {
+                                    setConfirmDialog({ open: true, item });
+                                  }}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                                >
+                                  <Truck className="h-3.5 w-3.5" />
+                                  Mark Ready & Transport
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setCancelDialog({ open: true, item })}
+                                  className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30 gap-1 text-[11px] rounded-xl px-2.5 h-8 cursor-pointer"
+                                  title="Cancel PO"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Cancel
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell className="pl-4 md:pl-6 py-4 text-left font-semibold text-primary text-xs sm:text-sm">
                         {item.poNumber}
                       </TableCell>
@@ -458,7 +462,7 @@ export function ReadyProductPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-16 text-center">
+                    <TableCell colSpan={activeTab === 'history' ? 9 : 10} className="py-16 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <div className="p-3 bg-primary/5 rounded-full">
                           <PackageCheck className="h-8 w-8 text-primary/40" />

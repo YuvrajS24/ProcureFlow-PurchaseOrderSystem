@@ -529,9 +529,11 @@ export function CreateBillPage() {
             <Table>
               <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border">
                 <TableRow>
-                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
-                    Actions
-                  </TableHead>
+                  {activeTab !== 'history' && (
+                    <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
+                      Actions
+                    </TableHead>
+                  )}
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">
                     PO Number
                   </TableHead>
@@ -592,64 +594,55 @@ export function CreateBillPage() {
               <TableBody>
                 {fmsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={activeTab === 'history' ? 16 : 11} className="py-16 text-center text-muted-foreground text-sm">
+                    <TableCell colSpan={activeTab === 'history' ? 15 : 11} className="py-16 text-center text-muted-foreground text-sm">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : filteredRows.length > 0 ? (
                   filteredRows.map((row) => {
-                    const pending = isPending(row);
                     const completed = isCompleted(row);
 
                     return (
                       <TableRow
                         key={row.poNumber}
-                        className="hover:bg-accent/40 border-b border-border transition-colors"
+                        onClick={() => activeTab === 'history' && setDetailDialog({ open: true, row })}
+                        className={`hover:bg-accent/40 border-b border-border transition-colors ${activeTab === 'history' ? 'cursor-pointer' : ''}`}
                       >
                         {/* Actions */}
-                        <TableCell className="pl-4 md:pl-6 py-4 text-left">
-                          <div className="flex items-center gap-1.5">
+                        {activeTab !== 'history' && (
+                          <TableCell className="pl-4 md:pl-6 py-4 text-left">
+                            <div className="flex items-center gap-1.5">
 
-                            {!row.billNumber ? (
-                              // No bill yet → Create Bill button
-                              <Button
-                                onClick={() => {
-                                  setBillAmountInput('');
-                                  setPerUnitPriceInput('');
-                                  setBillDateInput(new Date().toISOString().split('T')[0]);
-                                  setReceivedAmountInput('');
-                                  setSupplyQuantity2Input('');
-                                  setNarrationInput(row.narration || row['Narration'] || row.narretion || row['Narretion'] || row.BC || row['BC'] || '');
-                                  setBillPdfFile(null);
-                                  setBillPdfNameInput('');
-                                  setCreateBillDialog({ open: true, row });
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
-                              >
-                                <Receipt className="h-3.5 w-3.5" />
-                                Create Bill
-                              </Button>
-                            ) : !completed ? (
-                              // Bill created, not completed yet → Mark Complete
-                              <Button
-                                onClick={() => setConfirmDialog({ open: true, row })}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                Mark Complete
-                              </Button>
-                            ) : (
-                              // Completed → Download PDF
-                              <Button
-                                onClick={() => handleDownloadPdf(row)}
-                                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
-                              >
-                                <FileDown className="h-3.5 w-3.5" />
-                                Bill PDF
-                              </Button>
-                            )}
+                              {!row.billNumber ? (
+                                // No bill yet → Create Bill button
+                                <Button
+                                  onClick={() => {
+                                    setBillAmountInput('');
+                                    setPerUnitPriceInput('');
+                                    setBillDateInput(new Date().toISOString().split('T')[0]);
+                                    setReceivedAmountInput('');
+                                    setSupplyQuantity2Input('');
+                                    setNarrationInput(row.narration || row['Narration'] || row.narretion || row['Narretion'] || row.BC || row['BC'] || '');
+                                    setBillPdfFile(null);
+                                    setBillPdfNameInput('');
+                                    setCreateBillDialog({ open: true, row });
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                                >
+                                  <Receipt className="h-3.5 w-3.5" />
+                                  Create Bill
+                                </Button>
+                              ) : !completed ? (
+                                // Bill created, not completed yet → Mark Complete
+                                <Button
+                                  onClick={() => setConfirmDialog({ open: true, row })}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Mark Complete
+                                </Button>
+                              ) : null}
 
-                            {!completed && (
                               <Button
                                 variant="outline"
                                 onClick={() => setCancelDialog({ open: true, item: row })}
@@ -659,9 +652,9 @@ export function CreateBillPage() {
                                 <XCircle className="h-3.5 w-3.5" />
                                 Cancel
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
+                            </div>
+                          </TableCell>
+                        )}
 
                         {/* PO Number */}
                         <TableCell className="py-4 text-left font-semibold text-primary text-xs sm:text-sm">
@@ -797,7 +790,7 @@ export function CreateBillPage() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={activeTab === 'history' ? 12 : 11} className="py-16 text-center">
+                    <TableCell colSpan={11} className="py-16 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <div className="p-3 bg-primary/5 rounded-full">
                           <Receipt className="h-8 w-8 text-primary/40" />

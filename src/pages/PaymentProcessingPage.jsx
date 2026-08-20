@@ -677,17 +677,13 @@ export function PaymentProcessingPage() {
               <Table>
                 <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border">
                   <TableRow>
-                    {isSelectionMode ? (
+                    {isSelectionMode && (
                       <TableHead className="w-[50px] py-3 text-center pl-4">
                         <Checkbox
                           checked={isAllSelected}
                           onCheckedChange={handleSelectAll}
                           aria-label="Select all transactions"
                         />
-                      </TableHead>
-                    ) : (
-                      <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left pl-4 md:pl-6 w-[90px]">
-                        Actions
                       </TableHead>
                     )}
                     <TH>Timestamp</TH>
@@ -702,7 +698,7 @@ export function PaymentProcessingPage() {
                 <TableBody>
                   {loadingHistory ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-16 text-center">
+                      <TableCell colSpan={isSelectionMode ? 8 : 7} className="py-16 text-center">
                         <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
                           <p className="text-xs font-semibold text-foreground/80 animate-pulse">
@@ -718,27 +714,18 @@ export function PaymentProcessingPage() {
                       const billAmt = getBillAmount(row);
 
                       return (
-                        <TableRow key={rowId} className={`hover:bg-accent/40 border-b border-border transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
-                          {isSelectionMode ? (
+                        <TableRow
+                          key={rowId}
+                          onClick={() => !isSelectionMode && setDetailDialog({ open: true, item: row })}
+                          className={`hover:bg-accent/40 border-b border-border transition-colors ${isSelected ? 'bg-primary/5' : ''} ${!isSelectionMode ? 'cursor-pointer' : ''}`}
+                        >
+                          {isSelectionMode && (
                             <TableCell className="text-center pl-4 py-4 w-[50px]">
                               <Checkbox
                                 checked={isSelected}
                                 onCheckedChange={() => handleToggleSelect(rowId)}
                                 aria-label={`Select transaction ${rowId}`}
                               />
-                            </TableCell>
-                          ) : (
-                            <TableCell className="pl-4 md:pl-6 py-4 text-left w-[90px]">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenEdit(row)}
-                                className="h-7 px-2.5 text-[11px] rounded-lg gap-1 border-border hover:bg-accent text-foreground cursor-pointer"
-                                title="Edit Payment"
-                              >
-                                <Pencil className="h-3 w-3 text-muted-foreground" />
-                                Edit
-                              </Button>
                             </TableCell>
                           )}
                           <TableCell className="px-3 py-4 text-xs text-muted-foreground whitespace-nowrap">
@@ -773,7 +760,7 @@ export function PaymentProcessingPage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-16 text-center">
+                      <TableCell colSpan={isSelectionMode ? 8 : 7} className="py-16 text-center">
                         <EmptyState message="No payment entries yet." />
                       </TableCell>
                     </TableRow>

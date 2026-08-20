@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { useSheetData } from '@/hooks/useSheetData';
 import { uploadFile } from '@/services/api';
-import { makeTimestamp, formatDisplayDate } from '@/utils/dateUtils';
+import { makeTimestamp, formatDisplayDate, formatToTimestamp } from '@/utils/dateUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -279,6 +279,8 @@ export function GeneratePOPage() {
           createdBy,
           'PO Received Date': poReceivedDate,
           poReceivedDate,
+          'Planned 1': poReceivedDate ? formatToTimestamp(poReceivedDate) : '',
+          planned1: poReceivedDate ? formatToTimestamp(poReceivedDate) : '',
           'PO Expired Date': poExpiredDate,
           poExpiredDate,
           'PO PDF': poPdfUrl,

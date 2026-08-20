@@ -8,5 +8,6 @@ export const AVAILABLE_PAGES = [
   'Approve Product',
   'Payment Processing'
 ];
+
 export const AVAILABLE_ROLES = ['ADMIN', 'USER'];
 

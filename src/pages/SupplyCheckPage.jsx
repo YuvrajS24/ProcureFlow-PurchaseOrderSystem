@@ -282,7 +282,9 @@ export function SupplyCheckPage() {
             <Table>
               <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border sticky top-0 z-10 backdrop-blur-sm">
                 <TableRow>
-                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
+                  {activeTab !== 'history' && (
+                    <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
+                  )}
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">PO Number</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Vendor</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Quantity</TableHead>
@@ -296,48 +298,45 @@ export function SupplyCheckPage() {
               <TableBody>
                 {visibleItems.length > 0 ? (
                   visibleItems.map((item) => (
-                    <TableRow key={item.poNumber} className="hover:bg-accent/40 border-b border-border transition-colors">
-                      <TableCell className="pl-4 md:pl-6 py-4 text-left">
-                        <div className="flex items-center gap-1.5">
-                          {!hasValue(item.actual5) ? (
-                            <>
-                              <Button
-                                onClick={() => {
-                                  const existingDamage = item.damageQty ?? item['Damage Qty'] ?? item['Damage Quantity'] ?? item.BD ?? item['BD'] ?? '';
-                                  const existingReturn = item.returnQty ?? item['Return Qty'] ?? item['Supply Check Return Qty'] ?? item.BG ?? item['BG'] ?? '';
-                                  const existingExtra = item.extraQty ?? item['Extra Qty'] ?? item.BF ?? item['BF'] ?? '';
-                                  setDamageQtyInput(existingDamage !== '' ? String(existingDamage) : '');
-                                  setReturnQtyInput(existingReturn !== '' ? String(existingReturn) : '');
-                                  setExtraQtyInput(existingExtra !== '' ? String(existingExtra) : '');
-                                  setConfirmDialog({ open: true, item });
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
-                              >
-                                <ClipboardCheck className="h-3.5 w-3.5" />Verify Supply
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => setCancelDialog({ open: true, item })}
-                                className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30 gap-1 text-[11px] rounded-xl px-2.5 h-8 cursor-pointer"
-                                title="Cancel PO"
-                              >
-                                <XCircle className="h-3.5 w-3.5" />
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDetailDialog({ open: true, item })}
-                              className="h-7 px-2.5 text-[11px] rounded-lg gap-1 border-border hover:bg-accent text-foreground cursor-pointer"
-                            >
-                              <Eye className="h-3 w-3 text-muted-foreground" />
-                              View
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                    <TableRow
+                      key={item.poNumber}
+                      onClick={() => activeTab === 'history' && setDetailDialog({ open: true, item })}
+                      className={`hover:bg-accent/40 border-b border-border transition-colors ${activeTab === 'history' ? 'cursor-pointer' : ''}`}
+                    >
+                      {/* Actions */}
+                      {activeTab !== 'history' && (
+                        <TableCell className="pl-4 md:pl-6 py-4 text-left">
+                          <div className="flex items-center gap-1.5">
+                            {!hasValue(item.actual3) && (
+                              <>
+                                <Button
+                                  onClick={() => {
+                                    const existingDamage = item.damageQty ?? item['Damage Qty'] ?? item['Damage Quantity'] ?? item.BD ?? item['BD'] ?? '';
+                                    const existingReturn = item.returnQty ?? item['Return Qty'] ?? item['Supply Check Return Qty'] ?? item.BG ?? item['BG'] ?? '';
+                                    const existingExtra = item.extraQty ?? item['Extra Qty'] ?? item.BF ?? item['BF'] ?? '';
+                                    setDamageQtyInput(existingDamage !== '' ? String(existingDamage) : '');
+                                    setReturnQtyInput(existingReturn !== '' ? String(existingReturn) : '');
+                                    setExtraQtyInput(existingExtra !== '' ? String(existingExtra) : '');
+                                    setConfirmDialog({ open: true, item });
+                                  }}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                                >
+                                  <ClipboardCheck className="h-3.5 w-3.5" />Verify Supply
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setCancelDialog({ open: true, item })}
+                                  className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30 gap-1 text-[11px] rounded-xl px-2.5 h-8 cursor-pointer"
+                                  title="Cancel PO"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Cancel
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell className="pl-4 md:pl-6 py-4 text-left font-semibold text-primary text-xs sm:text-sm">{item.poNumber}</TableCell>
                       <TableCell className="py-4 text-left text-xs sm:text-sm font-medium text-foreground">{item.vendorName}</TableCell>
                       <TableCell className="py-4 text-left font-bold text-xs sm:text-sm text-foreground">
@@ -380,7 +379,7 @@ export function SupplyCheckPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-16 text-center">
+                    <TableCell colSpan={activeTab === 'history' ? 9 : 10} className="py-16 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <div className="p-3 bg-primary/5 rounded-full">
                           <ClipboardCheck className="h-8 w-8 text-primary/40" />

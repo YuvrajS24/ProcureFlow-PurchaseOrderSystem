@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useSheetData } from '@/hooks/useSheetData';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -22,6 +23,79 @@ import {
 
 export function Sidebar({ mobileOpen, onClose }) {
   const { currentUser } = useAuth();
+
+  // Sheet Data Hooks for notifications
+  const [fmsData] = useSheetData('fms-2', 'poNumber');
+  const [paymentHistory] = useSheetData('payment history', '_row');
+
+  // Helpers
+  const isValidDate = (val) => {
+    if (!val) return false;
+    const str = String(val).trim().toLowerCase();
+    return str !== '' && str !== '—' && str !== '-' && str !== 'not yet';
+  };
+
+  const isDeleted = (r) => {
+    return String(r['Delete Status'] || r.deleteStatus || '').trim().toLowerCase() === 'deleted';
+  };
+
+  // 1. Create Bill Count
+  const createBillCount = React.useMemo(() => {
+    if (!Array.isArray(fmsData)) return 0;
+    return fmsData.filter(row => !isDeleted(row) && isValidDate(row.planned1) && !isValidDate(row.actual1)).length;
+  }, [fmsData]);
+
+  // 2. Ready Product Count
+  const readyProductCount = React.useMemo(() => {
+    if (!Array.isArray(fmsData)) return 0;
+    return fmsData.filter(row => !isDeleted(row) && isValidDate(row.planned2) && !isValidDate(row.actual2)).length;
+  }, [fmsData]);
+
+  // 3. Supply Check Count
+  const supplyCheckCount = React.useMemo(() => {
+    if (!Array.isArray(fmsData)) return 0;
+    return fmsData.filter(row => !isDeleted(row) && isValidDate(row.planned3) && !isValidDate(row.actual3)).length;
+  }, [fmsData]);
+
+  // 4. Approve Product Count
+  const approveProductCount = React.useMemo(() => {
+    if (!Array.isArray(fmsData)) return 0;
+    return fmsData.filter(row => !isDeleted(row) && isValidDate(row.planned4) && !isValidDate(row.actual4)).length;
+  }, [fmsData]);
+
+  // 5. Payment Processing Count
+  const paymentProcessingCount = React.useMemo(() => {
+    if (!Array.isArray(fmsData)) return 0;
+    
+    const receivedByPo = {};
+    if (Array.isArray(paymentHistory)) {
+      paymentHistory.forEach((p) => {
+        const poNo = String(p['PO Number'] || p.poNumber || '').trim();
+        const amt = Number(p['Received Amount'] || p.receivedAmount || 0);
+        if (poNo) {
+          receivedByPo[poNo] = (receivedByPo[poNo] || 0) + amt;
+        }
+      });
+    }
+
+    return fmsData.filter(row => {
+      if (isDeleted(row) || !isValidDate(row.planned5)) return false;
+      const poNo = String(row.poNumber || '').trim();
+      const bill = Number(row.billAmount) || 0;
+      const received = receivedByPo[poNo] || 0;
+      if (bill > 0 && received >= bill) return false;
+      return true;
+    }).length;
+  }, [fmsData, paymentHistory]);
+
+  const getBadgeCount = (label) => {
+    if (label === 'Create Bill') return createBillCount;
+    if (label === 'Ready Product & Transport') return readyProductCount;
+    if (label === 'Supply Check') return supplyCheckCount;
+    if (label === 'Approve Product') return approveProductCount;
+    if (label === 'Payment Processing') return paymentProcessingCount;
+    return 0;
+  };
 
   const navigationItems = [
     {
@@ -98,15 +172,33 @@ export function Sidebar({ mobileOpen, onClose }) {
               to={item.path}
               onClick={() => onClose()}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                `flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`
               }
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span>{item.label}</span>
+              {({ isActive }) => {
+                const count = getBadgeCount(item.label);
+                return (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </div>
+                    {count > 0 && (
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full transition-all duration-300 shadow-sm select-none ${
+                        isActive
+                          ? 'bg-white text-primary border border-white/20'
+                          : 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30'
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </>
+                );
+              }}
             </NavLink>
           );
         })}
@@ -169,21 +261,39 @@ export function Sidebar({ mobileOpen, onClose }) {
           {visibleItems.map(item => {
             const Icon = item.icon;
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => onClose()}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`
-                }
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.label}</span>
-              </NavLink>
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => onClose()}
+              className={({ isActive }) =>
+                `flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`
+              }
+            >
+              {({ isActive }) => {
+                const count = getBadgeCount(item.label);
+                return (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </div>
+                    {count > 0 && (
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full transition-all duration-300 shadow-sm select-none ${
+                        isActive
+                          ? 'bg-white text-primary border border-white/20'
+                          : 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30'
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </>
+                );
+              }}
+            </NavLink>
             );
           })}
         </nav>
