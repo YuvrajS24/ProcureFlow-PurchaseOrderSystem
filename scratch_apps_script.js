@@ -691,7 +691,7 @@ function doGet(e) {
 
             const widths = {
                 1: 150,  // A: Timestamp
-                3: 150,  // C: PO Number
+                3: 180,  // C: PO Number
                 4: 200,  // D: Vendor Name
                 5: 100,  // E: Total Quantity
                 6: 100,  // F: Location
@@ -699,13 +699,13 @@ function doGet(e) {
                 8: 120,  // H: Created By
                 9: 150,  // I: PO Received Date
                 10: 150, // J: PO Expired Date
-                11: 150, // K: PO PDF
+                11: 250, // K: PO PDF
                 13: 150, // M: Actual 1
-                15: 150, // O: Bill Number
+                15: 180, // O: Bill Number
                 16: 100, // P: Bill Amount
                 17: 100, // Q: Per Unit Price
                 18: 150, // R: Bill Date
-                19: 150, // S: Bill PDF
+                19: 250, // S: Bill PDF
                 21: 150, // U: Actual 2
                 24: 150, // X: Transporter name
                 25: 100, // Y: Quantity
@@ -713,10 +713,14 @@ function doGet(e) {
                 27: 300, // AA: Delivery address
                 29: 150, // AC: Actual 3
                 34: 150, // AH: Actual 4
+                38: 120, // AL: Planned 5
                 39: 150, // AM: Actual 5
-                51: 200, // AY: Narration 1
-                55: 200, // BC: Narration 2
-                57: 150  // BE: Vehicle Number
+                48: 120, // AV: Status
+                49: 250, // AW: Narration
+                51: 200, // AY: Supply Quantity 1
+                53: 250, // BA: Narration (Stage 1 / Create Bill)
+                55: 200, // BC: Vehicle Number
+                57: 150  // BE: Return Qty
             };
 
             for (const col in widths) {
