@@ -96,6 +96,7 @@ export function PaymentProcessingPage() {
   const [formAddress, setFormAddress] = useState('');
   const [formBillingAmount, setFormBillingAmount] = useState('');
   const [formPaymentAmount, setFormPaymentAmount] = useState('');
+  const [formPaymentDate, setFormPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [formPaymentProofFile, setFormPaymentProofFile] = useState(null);
   const [formPaymentProofNameInput, setFormPaymentProofNameInput] = useState('');
   const [isUploadingProof, setIsUploadingProof] = useState(false);
@@ -198,6 +199,7 @@ export function PaymentProcessingPage() {
     setFormAddress(item.address || '');
     setFormBillingAmount(item.billAmount != null ? String(item.billAmount) : '');
     setFormPaymentAmount('');
+    setFormPaymentDate(new Date().toISOString().split('T')[0]);
     setFormPaymentProofFile(null);
     setFormPaymentProofNameInput('');
     setPayDialog({ open: true, item, isEdit: false, editingRowId: null });
@@ -216,6 +218,8 @@ export function PaymentProcessingPage() {
         ? String(row['Received Amount'])
         : (row.receivedAmount != null ? String(row.receivedAmount) : '')
     );
+    const existingDate = row['Timestamp'] || row.timestamp;
+    setFormPaymentDate(existingDate ? new Date(existingDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setFormPaymentProofFile(null);
     setFormPaymentProofNameInput('');
     setPayDialog({ open: true, item: row, isEdit: true, editingRowId: row._row });
@@ -243,7 +247,10 @@ export function PaymentProcessingPage() {
       return;
     }
 
-    const nowTimestamp = makeTimestamp();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowTimestamp = formPaymentDate === todayStr 
+      ? makeTimestamp() 
+      : new Date(`${formPaymentDate}T12:00:00Z`).toISOString();
 
     setIsSaving(true);
     let proofUrl = (payDialog.isEdit && payDialog.item) ? (payDialog.item['Payment Proof'] || payDialog.item.paymentProof || '') : '';
@@ -923,6 +930,20 @@ export function PaymentProcessingPage() {
                   </p>
                 )}
               </div>
+
+              {/* Payment Date */}
+              <div className="space-y-1.5 text-left">
+                <Label className="text-xs font-semibold text-muted-foreground">Payment Date*</Label>
+                <Input
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  value={formPaymentDate}
+                  onChange={(e) => setFormPaymentDate(e.target.value)}
+                  className="rounded-xl bg-background border-input text-xs h-10 w-full"
+                  required
+                />
+              </div>
+              <div className="hidden sm:block"></div>
               
               {/* Payment Proof */}
               <div className="space-y-1.5 text-left sm:col-span-2">
