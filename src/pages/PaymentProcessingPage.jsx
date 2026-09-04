@@ -218,8 +218,8 @@ export function PaymentProcessingPage() {
         ? String(row['Received Amount'])
         : (row.receivedAmount != null ? String(row.receivedAmount) : '')
     );
-    const existingDate = row['Timestamp'] || row.timestamp;
-    setFormPaymentDate(existingDate ? new Date(existingDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    const actualDate = row['Actual Payment Date'] || row.actualPaymentDate;
+    setFormPaymentDate(actualDate ? new Date(actualDate).toISOString().split('T')[0] : (row['Timestamp'] ? new Date(row['Timestamp']).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]));
     setFormPaymentProofFile(null);
     setFormPaymentProofNameInput('');
     setPayDialog({ open: true, item: row, isEdit: true, editingRowId: row._row });
@@ -247,10 +247,7 @@ export function PaymentProcessingPage() {
       return;
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const nowTimestamp = formPaymentDate === todayStr 
-      ? makeTimestamp() 
-      : new Date(`${formPaymentDate}T12:00:00Z`).toISOString();
+    const nowTimestamp = makeTimestamp();
 
     setIsSaving(true);
     let proofUrl = (payDialog.isEdit && payDialog.item) ? (payDialog.item['Payment Proof'] || payDialog.item.paymentProof || '') : '';
@@ -294,6 +291,8 @@ export function PaymentProcessingPage() {
               address: formAddress,
               'Payment Proof': proofUrl,
               paymentProof: proofUrl,
+              'Actual Payment Date': formPaymentDate,
+              actualPaymentDate: formPaymentDate,
             };
           }
           return r;
@@ -329,7 +328,8 @@ export function PaymentProcessingPage() {
         formVendor,
         billAmt,
         amountToAdd,
-        proofUrl
+        proofUrl,
+        formPaymentDate
       ]);
 
       const newRecord = {
@@ -342,6 +342,8 @@ export function PaymentProcessingPage() {
         'Received Amount': amountToAdd,
         'Payment Proof': proofUrl,
         paymentProof: proofUrl,
+        'Actual Payment Date': formPaymentDate,
+        actualPaymentDate: formPaymentDate,
         location: formLocation,
         address: formAddress,
       };
@@ -725,6 +727,7 @@ export function PaymentProcessingPage() {
                         />
                       </TableHead>
                     )}
+                    <TH>Recorded On</TH>
                     <TH>Payment Date</TH>
                     <TH>Payment No</TH>
                     <TH>Serial No</TH>
@@ -769,6 +772,9 @@ export function PaymentProcessingPage() {
                           )}
                           <TableCell className="px-3 py-4 text-xs text-muted-foreground whitespace-nowrap">
                             {(row['Timestamp'] || row.timestamp) ? formatDate(row['Timestamp'] || row.timestamp) : '—'}
+                          </TableCell>
+                          <TableCell className="px-3 py-4 text-xs font-semibold text-foreground whitespace-nowrap">
+                            {(row['Actual Payment Date'] || row.actualPaymentDate) ? formatDate(row['Actual Payment Date'] || row.actualPaymentDate) : '—'}
                           </TableCell>
                           <TableCell className="px-3 py-4">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
