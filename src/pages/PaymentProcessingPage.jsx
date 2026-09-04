@@ -686,7 +686,7 @@ export function PaymentProcessingPage() {
                         />
                       </TableHead>
                     )}
-                    <TH>Timestamp</TH>
+                    <TH>Payment Date</TH>
                     <TH>Payment No</TH>
                     <TH>Serial No</TH>
                     <TH>PO Number</TH>
