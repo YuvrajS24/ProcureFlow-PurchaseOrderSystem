@@ -729,7 +729,7 @@ export function PaymentProcessingPage() {
                             </TableCell>
                           )}
                           <TableCell className="px-3 py-4 text-xs text-muted-foreground whitespace-nowrap">
-                            {row['Timestamp'] || row.timestamp || '—'}
+                            {(row['Timestamp'] || row.timestamp) ? formatDate(row['Timestamp'] || row.timestamp) : '—'}
                           </TableCell>
                           <TableCell className="px-3 py-4">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
