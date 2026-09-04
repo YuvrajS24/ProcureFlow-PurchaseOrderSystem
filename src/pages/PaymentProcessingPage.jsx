@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { useSheetData } from '@/hooks/useSheetData';
-import { insertRow } from '@/services/api';
+import { insertRow, uploadFile } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -96,6 +96,9 @@ export function PaymentProcessingPage() {
   const [formAddress, setFormAddress] = useState('');
   const [formBillingAmount, setFormBillingAmount] = useState('');
   const [formPaymentAmount, setFormPaymentAmount] = useState('');
+  const [formPaymentProofFile, setFormPaymentProofFile] = useState(null);
+  const [formPaymentProofNameInput, setFormPaymentProofNameInput] = useState('');
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
 
   const isDeleted = (r) => String(r['Delete Status'] || r.deleteStatus || '').trim().toLowerCase() === 'deleted';
 
@@ -195,6 +198,8 @@ export function PaymentProcessingPage() {
     setFormAddress(item.address || '');
     setFormBillingAmount(item.billAmount != null ? String(item.billAmount) : '');
     setFormPaymentAmount('');
+    setFormPaymentProofFile(null);
+    setFormPaymentProofNameInput('');
     setPayDialog({ open: true, item, isEdit: false, editingRowId: null });
   };
 
@@ -211,6 +216,8 @@ export function PaymentProcessingPage() {
         ? String(row['Received Amount'])
         : (row.receivedAmount != null ? String(row.receivedAmount) : '')
     );
+    setFormPaymentProofFile(null);
+    setFormPaymentProofNameInput('');
     setPayDialog({ open: true, item: row, isEdit: true, editingRowId: row._row });
   };
 
@@ -238,9 +245,29 @@ export function PaymentProcessingPage() {
 
     const nowTimestamp = makeTimestamp();
 
+    setIsSaving(true);
+    let proofUrl = (payDialog.isEdit && payDialog.item) ? (payDialog.item['Payment Proof'] || payDialog.item.paymentProof || '') : '';
+
+    if (formPaymentProofFile) {
+      try {
+        toast('Uploading Payment Proof...', 'info');
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(formPaymentProofFile);
+        });
+        const uploadRes = await uploadFile(base64, formPaymentProofFile.name, formPaymentProofFile.type || 'image/jpeg', '1Hzz1nxg1A_rDaigFZ6ZMxpB2-AzSmIhM');
+        proofUrl = uploadRes.fileUrl || '';
+      } catch (err) {
+        toast(`Upload failed: ${err.message}`, 'error');
+        setIsSaving(false);
+        return;
+      }
+    }
+
     if (payDialog.isEdit) {
       const targetRowId = payDialog.editingRowId;
-      setIsSaving(true);
       try {
         const updated = paymentHistoryData.map((r) => {
           if (r._row === targetRowId) {
@@ -258,6 +285,8 @@ export function PaymentProcessingPage() {
               location: formLocation,
               'Address': formAddress,
               address: formAddress,
+              'Payment Proof': proofUrl,
+              paymentProof: proofUrl,
             };
           }
           return r;
@@ -293,6 +322,7 @@ export function PaymentProcessingPage() {
         formVendor,
         billAmt,
         amountToAdd,
+        proofUrl
       ]);
 
       const newRecord = {
@@ -303,6 +333,8 @@ export function PaymentProcessingPage() {
         'Vendor Name': formVendor,
         'Bill Amount': billAmt,
         'Received Amount': amountToAdd,
+        'Payment Proof': proofUrl,
+        paymentProof: proofUrl,
         location: formLocation,
         address: formAddress,
       };
@@ -888,6 +920,35 @@ export function PaymentProcessingPage() {
                 {formPaymentAmount !== '' && remainingBalance > 0 && Number(formPaymentAmount) > remainingBalance && (
                   <p className="text-[11px] text-rose-500 font-medium mt-1">
                     Amount cannot exceed remaining balance of ₹{remainingBalance.toLocaleString('en-IN')}.
+                  </p>
+                )}
+              </div>
+              
+              {/* Payment Proof */}
+              <div className="space-y-1.5 text-left sm:col-span-2">
+                <Label className="text-xs font-semibold text-muted-foreground">Payment Proof (Optional)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormPaymentProofFile(file);
+                        setFormPaymentProofNameInput(file.name);
+                      }
+                    }}
+                    className="rounded-xl bg-background border-input file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer text-xs h-10 w-full"
+                  />
+                </div>
+                {formPaymentProofNameInput && (
+                  <p className="text-[10px] text-muted-foreground font-medium mt-1 truncate">
+                    Selected: {formPaymentProofNameInput}
+                  </p>
+                )}
+                {payDialog.isEdit && payDialog.item && (payDialog.item['Payment Proof'] || payDialog.item.paymentProof) && !formPaymentProofFile && (
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
+                    Current attachment: <a href={payDialog.item['Payment Proof'] || payDialog.item.paymentProof} target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-700">View File</a>
                   </p>
                 )}
               </div>
