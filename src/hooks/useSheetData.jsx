@@ -92,6 +92,21 @@ function getValueForHeader(item, h) {
   if (target === 'supplycheck') {
     return item.supplyCheck ?? item['Supply Check'] ?? '';
   }
+  if (target === 'billnumber') {
+    return item.billNumber ?? item['Bill Number'] ?? (item.poNumber ? `BILL-${item.poNumber}` : '');
+  }
+  if (target === 'billdate') {
+    return item.billDate ?? item['Bill Date'] ?? '';
+  }
+  if (target === 'billpdf') {
+    return item.billPdf ?? item['Bill PDF'] ?? '';
+  }
+  if (target === 'actual1') {
+    return item.actual1 ?? item['Actual 1'] ?? '';
+  }
+  if (target === 'planned2') {
+    return item.planned2 ?? item['Planned 2'] ?? '';
+  }
   if (target === 'billamount') {
     return item.billAmount ?? item['Bill Amount'] ?? '';
   }
@@ -211,6 +226,16 @@ function normalizeRow(row) {
     'Cancel Qty': row.cancelQty ?? row['Cancel Qty'] ?? '',
     billAmount: row.billAmount ?? row['Bill Amount'] ?? '',
     'Bill Amount': row.billAmount ?? row['Bill Amount'] ?? '',
+    billNumber: row.billNumber ?? row['Bill Number'] ?? (pNo ? `BILL-${pNo}` : ''),
+    'Bill Number': row.billNumber ?? row['Bill Number'] ?? (pNo ? `BILL-${pNo}` : ''),
+    billDate: row.billDate ?? row['Bill Date'] ?? '',
+    'Bill Date': row.billDate ?? row['Bill Date'] ?? '',
+    billPdf: row.billPdf ?? row['Bill PDF'] ?? '',
+    'Bill PDF': row.billPdf ?? row['Bill PDF'] ?? '',
+    actual1: row.actual1 ?? row['Actual 1'] ?? '',
+    'Actual 1': row.actual1 ?? row['Actual 1'] ?? '',
+    planned2: row.planned2 ?? row['Planned 2'] ?? '',
+    'Planned 2': row.planned2 ?? row['Planned 2'] ?? '',
     damageQty: row.damageQty ?? row['Damage Qty'] ?? row['Damage Quantity'] ?? row.BD ?? row['BD'] ?? '',
     extraQty: row.extraQty ?? row['Extra Qty'] ?? row.BF ?? row['BF'] ?? '',
     'Extra Qty': row.extraQty ?? row['Extra Qty'] ?? row.BF ?? row['BF'] ?? '',

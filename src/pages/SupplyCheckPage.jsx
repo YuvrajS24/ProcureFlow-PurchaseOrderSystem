@@ -26,6 +26,7 @@ import {
   MapPin,
   CalendarClock,
   Eye,
+  FilePlus2,
   XCircle,
 } from 'lucide-react';
 import { CancelOrderDialog } from '@/components/shared/CancelOrderDialog';
@@ -123,7 +124,7 @@ export function SupplyCheckPage() {
       r.poNumber === item.poNumber
         ? {
             ...r,
-            actual3: nowTimestamp,
+            actual3: r.actual3 || nowTimestamp,
             updatedBy: userName,
             'Damage Qty': parsedDamage,
             'Damage Quantity': parsedDamage,
@@ -143,14 +144,14 @@ export function SupplyCheckPage() {
             BF: parsedExtra,
             'Supply Check': `Checked (Dmg: ${parsedDamage}, Ret: ${parsedReturn}, Extra: ${parsedExtra})`,
             supplyCheck: `Checked (Dmg: ${parsedDamage}, Ret: ${parsedReturn}, Extra: ${parsedExtra})`,
-            planned4: planned4Timestamp,
-            'Planned 4': planned4Timestamp,
+            planned4: r.planned4 || planned4Timestamp,
+            'Planned 4': r['Planned 4'] || r.planned4 || planned4Timestamp,
           }
         : r
     );
     setFmsData(updated);
 
-    toast(`Supply check for ${item.poNumber} completed!`, 'success');
+    toast(`Supply check for ${item.poNumber} ${isCompleted(item) ? 'revised' : 'completed'}!`, 'success');
     setConfirmDialog({ open: false, item: null });
   };
 
@@ -282,9 +283,7 @@ export function SupplyCheckPage() {
             <Table>
               <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border sticky top-0 z-10 backdrop-blur-sm">
                 <TableRow>
-                  {activeTab !== 'history' && (
-                    <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
-                  )}
+                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">PO Number</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Vendor</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Quantity</TableHead>
@@ -304,10 +303,27 @@ export function SupplyCheckPage() {
                       className={`hover:bg-accent/40 border-b border-border transition-colors ${activeTab === 'history' ? 'cursor-pointer' : ''}`}
                     >
                       {/* Actions */}
-                      {activeTab !== 'history' && (
-                        <TableCell className="pl-4 md:pl-6 py-4 text-left">
-                          <div className="flex items-center gap-1.5">
-                            {!hasValue(item.actual3) && (
+                      <TableCell className="pl-4 md:pl-6 py-4 text-left" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5">
+                          {activeTab === 'history' ? (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const existingDamage = item.damageQty ?? item['Damage Qty'] ?? item['Damage Quantity'] ?? item.BD ?? item['BD'] ?? '';
+                                const existingReturn = item.returnQty ?? item['Return Qty'] ?? item['Supply Check Return Qty'] ?? item.BG ?? item['BG'] ?? '';
+                                const existingExtra = item.extraQty ?? item['Extra Qty'] ?? item.BF ?? item['BF'] ?? '';
+                                setDamageQtyInput(existingDamage !== '' ? String(existingDamage) : '');
+                                setReturnQtyInput(existingReturn !== '' ? String(existingReturn) : '');
+                                setExtraQtyInput(existingExtra !== '' ? String(existingExtra) : '');
+                                setConfirmDialog({ open: true, item });
+                              }}
+                              className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                            >
+                              <FilePlus2 className="h-3.5 w-3.5" />
+                              Revise History
+                            </Button>
+                          ) : (
+                            !hasValue(item.actual3) && (
                               <>
                                 <Button
                                   onClick={() => {
@@ -321,7 +337,7 @@ export function SupplyCheckPage() {
                                   }}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
                                 >
-                                  <ClipboardCheck className="h-3.5 w-3.5" />Verify Supply
+                                  <ClipboardCheck className="h-3.5 w-3.5" />Verify Received
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -333,10 +349,10 @@ export function SupplyCheckPage() {
                                   Cancel
                                 </Button>
                               </>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
+                            )
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="pl-4 md:pl-6 py-4 text-left font-semibold text-primary text-xs sm:text-sm">{item.poNumber}</TableCell>
                       <TableCell className="py-4 text-left text-xs sm:text-sm font-medium text-foreground">{item.vendorName}</TableCell>
                       <TableCell className="py-4 text-left font-bold text-xs sm:text-sm text-foreground">
@@ -420,7 +436,7 @@ export function SupplyCheckPage() {
           <DialogHeader className="text-left mb-2">
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5 text-emerald-600" />
-              Verify Supply Check
+              {confirmDialog.item && isCompleted(confirmDialog.item) ? 'Revise Supply Check' : 'Verify Supply Check'}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground mt-1">
               Confirm physical received supply details.
@@ -518,7 +534,8 @@ export function SupplyCheckPage() {
                     disabled={isDamageInvalid || isReturnInvalid}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ClipboardCheck className="h-4 w-4" />Verify Received
+                    <ClipboardCheck className="h-4 w-4" />
+                    {confirmDialog.item && isCompleted(confirmDialog.item) ? 'Revise Received' : 'Verify Received'}
                   </Button>
                 </DialogFooter>
               </>

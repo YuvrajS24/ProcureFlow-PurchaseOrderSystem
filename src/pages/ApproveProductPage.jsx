@@ -25,6 +25,7 @@ import {
   MapPin,
   CalendarClock,
   Eye,
+  FilePlus2,
   XCircle,
 } from 'lucide-react';
 import { CancelOrderDialog } from '@/components/shared/CancelOrderDialog';
@@ -113,16 +114,16 @@ export function ApproveProductPage() {
           'Pending Qty': 0,
           cancelQty: shortageQty,
           'Cancel Qty': shortageQty,
-          actual4: nowTimestamp,
-          planned5: planned5Timestamp,
-          'Planned 5': planned5Timestamp,
+          actual4: r.actual4 || nowTimestamp,
+          planned5: r.planned5 || planned5Timestamp,
+          'Planned 5': r['Planned 5'] || r.planned5 || planned5Timestamp,
           updatedBy: userName,
         }
         : r
     );
     setFmsData(updated);
 
-    toast(`Product ${item.poNumber} approved successfully!`, 'success');
+    toast(`Product ${item.poNumber} ${isCompleted(item) ? 'revised' : 'approved'} successfully!`, 'success');
     setConfirmDialog({ open: false, item: null });
   };
 
@@ -251,9 +252,7 @@ export function ApproveProductPage() {
             <Table>
               <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border sticky top-0 z-10 backdrop-blur-sm">
                 <TableRow>
-                  {activeTab !== 'history' && (
-                    <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
-                  )}
+                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">PO Number</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Vendor</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Quantity</TableHead>
@@ -292,10 +291,23 @@ export function ApproveProductPage() {
                         className={`hover:bg-accent/40 border-b border-border transition-colors ${activeTab === 'history' ? 'cursor-pointer' : ''}`}
                       >
                         {/* Actions */}
-                        {activeTab !== 'history' && (
-                          <TableCell className="pl-4 md:pl-6 py-4 text-left">
-                            <div className="flex items-center gap-1.5">
-                              {!hasValue(item.actual4) && (
+                        <TableCell className="pl-4 md:pl-6 py-4 text-left" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1.5">
+                            {activeTab === 'history' ? (
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setApprovePoPriceInput(item.approvePoPrice || item['Approve Po Price'] || item.perUnitPrice || item['Per Unit Price'] || '');
+                                  setApprovePoQtyInput(item.approvePoQty || item['Approve Po Qty'] || item.netApprovedQty || item['Net Approved Qty'] || calculatedPoQty || '');
+                                  setConfirmDialog({ open: true, item });
+                                }}
+                                className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                              >
+                                <FilePlus2 className="h-3.5 w-3.5" />
+                                Revise History
+                              </Button>
+                            ) : (
+                              !hasValue(item.actual4) && (
                                 <>
                                   <Button onClick={() => {
                                     setApprovePoPriceInput(item.perUnitPrice || item['Per Unit Price'] || '');
@@ -314,10 +326,10 @@ export function ApproveProductPage() {
                                     Cancel
                                   </Button>
                                 </>
-                              )}
-                            </div>
-                          </TableCell>
-                        )}
+                              )
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="pl-4 md:pl-6 py-4 text-left font-semibold text-primary text-xs sm:text-sm">{item.poNumber}</TableCell>
                         <TableCell className="py-4 text-left text-xs sm:text-sm font-medium text-foreground">{item.vendorName}</TableCell>
                         <TableCell className="py-4 text-left font-bold text-xs sm:text-sm text-foreground">
@@ -526,7 +538,8 @@ export function ApproveProductPage() {
           <DialogFooter className="mt-4 gap-2 border-t border-border/30 pt-4">
             <Button variant="outline" onClick={() => setConfirmDialog({ open: false, item: null })} className="border-border hover:bg-accent rounded-xl cursor-pointer text-xs h-9 px-4">Cancel</Button>
             <Button onClick={() => confirmDialog.item && handleMarkComplete(confirmDialog.item)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5 text-xs h-9 px-4 font-semibold">
-              <CheckSquare className="h-4 w-4" />Confirm Approval
+              <CheckSquare className="h-4 w-4" />
+              {confirmDialog.item && isCompleted(confirmDialog.item) ? 'Revise Approval' : 'Confirm Approval'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -27,6 +27,7 @@ import {
   Truck,
   CalendarClock,
   Eye,
+  FilePlus2,
   XCircle,
 } from 'lucide-react';
 import { CancelOrderDialog } from '@/components/shared/CancelOrderDialog';
@@ -143,7 +144,7 @@ export function ReadyProductPage() {
       r.poNumber === item.poNumber
         ? {
             ...r,
-            actual2: nowTimestamp,
+            actual2: r.actual2 || nowTimestamp,
             updatedBy: userName,
             transporterName: selectedTransporter,
             'Transporter name': selectedTransporter,
@@ -163,14 +164,14 @@ export function ReadyProductPage() {
             extraQty: parsedExtra,
             'BF': parsedExtra,
             BF: parsedExtra,
-            planned3: planned3Timestamp,
-            'Planned 3': planned3Timestamp,
+            planned3: r.planned3 || planned3Timestamp,
+            'Planned 3': r['Planned 3'] || r.planned3 || planned3Timestamp,
           }
         : r
     );
     setReadyProducts(updated);
 
-    toast(`Product & transport for ${item.poNumber} verified!`, 'success');
+    toast(`Product & transport for ${item.poNumber} ${isCompleted(item) ? 'revised' : 'verified'}!`, 'success');
     setConfirmDialog({ open: false, item: null });
   };
 
@@ -316,11 +317,9 @@ export function ReadyProductPage() {
             <Table>
               <TableHeader className="bg-neutral-50/50 dark:bg-neutral-900/10 border-b border-border">
                 <TableRow>
-                  {activeTab !== 'history' && (
-                    <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
-                      Actions
-                    </TableHead>
-                  )}
+                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
+                    Actions
+                  </TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">
                     PO Number
                   </TableHead>
@@ -359,10 +358,21 @@ export function ReadyProductPage() {
                       className={`hover:bg-accent/40 border-b border-border transition-colors ${activeTab === 'history' ? 'cursor-pointer' : ''}`}
                     >
                       {/* Actions */}
-                      {activeTab !== 'history' && (
-                        <TableCell className="pl-4 md:pl-6 py-4 text-left">
-                          <div className="flex items-center gap-1.5">
-                            {!hasValue(item.actual2) && (
+                      <TableCell className="pl-4 md:pl-6 py-4 text-left" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5">
+                          {activeTab === 'history' ? (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDialog({ open: true, item });
+                              }}
+                              className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                            >
+                              <FilePlus2 className="h-3.5 w-3.5" />
+                              Revise History
+                            </Button>
+                          ) : (
+                            !hasValue(item.actual2) && (
                               <>
                                 <Button
                                   onClick={() => {
@@ -383,10 +393,10 @@ export function ReadyProductPage() {
                                   Cancel
                                 </Button>
                               </>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
+                            )
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="pl-4 md:pl-6 py-4 text-left font-semibold text-primary text-xs sm:text-sm">
                         {item.poNumber}
                       </TableCell>
@@ -494,10 +504,10 @@ export function ReadyProductPage() {
           <DialogHeader className="text-left mb-2">
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <PackageCheck className="h-5 w-5 text-emerald-500" />
-              Confirm Product & Transport Ready
+              {confirmDialog.item && isCompleted(confirmDialog.item) ? 'Revise Transport Details' : 'Confirm Product & Transport Ready'}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground mt-1">
-              Verify quantities and transport details before moving this order to the next stage.
+              Verify quantities and transport details before saving.
             </DialogDescription>
           </DialogHeader>
 
@@ -630,7 +640,7 @@ export function ReadyProductPage() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer gap-1.5 text-xs h-9 px-4"
             >
               <Truck className="h-4 w-4" />
-              Confirm Ready & Transport
+              {confirmDialog.item && isCompleted(confirmDialog.item) ? 'Revise Transport' : 'Confirm Ready & Transport'}
             </Button>
           </DialogFooter>
         </DialogContent>

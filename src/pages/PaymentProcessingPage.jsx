@@ -34,6 +34,7 @@ import {
   CheckCircle2,
   Clock,
   Pencil,
+  FilePlus2,
   CheckSquare,
   Trash2,
   X,
@@ -727,6 +728,7 @@ export function PaymentProcessingPage() {
                         />
                       </TableHead>
                     )}
+                    <TH>Actions</TH>
                     <TH>Recorded On</TH>
                     <TH>Payment Date</TH>
                     <TH>Payment No</TH>
@@ -740,7 +742,7 @@ export function PaymentProcessingPage() {
                 <TableBody>
                   {loadingHistory ? (
                     <TableRow>
-                      <TableCell colSpan={isSelectionMode ? 8 : 7} className="py-16 text-center">
+                      <TableCell colSpan={isSelectionMode ? 9 : 8} className="py-16 text-center">
                         <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
                           <p className="text-xs font-semibold text-foreground/80 animate-pulse">
@@ -770,6 +772,18 @@ export function PaymentProcessingPage() {
                               />
                             </TableCell>
                           )}
+                          <TableCell className="px-3 py-4 text-left" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEdit(row);
+                              }}
+                              className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-[11px] rounded-xl px-3 h-8 cursor-pointer shadow-sm"
+                            >
+                              <FilePlus2 className="h-3.5 w-3.5" />
+                              Revise History
+                            </Button>
+                          </TableCell>
                           <TableCell className="px-3 py-4 text-xs text-muted-foreground whitespace-nowrap">
                             {(row['Timestamp'] || row.timestamp) ? formatDate(row['Timestamp'] || row.timestamp) : '—'}
                           </TableCell>
@@ -805,7 +819,7 @@ export function PaymentProcessingPage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={isSelectionMode ? 8 : 7} className="py-16 text-center">
+                      <TableCell colSpan={isSelectionMode ? 9 : 8} className="py-16 text-center">
                         <EmptyState message="No payment entries yet." />
                       </TableCell>
                     </TableRow>
