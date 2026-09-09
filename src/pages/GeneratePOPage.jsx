@@ -24,15 +24,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { 
-  Plus, 
-  Search, 
-  MapPin, 
-  User, 
-  Clock, 
-  Trash2, 
-  Copy, 
-  Map, 
+import {
+  Plus,
+  Search,
+  MapPin,
+  User,
+  Clock,
+  Trash2,
+  Copy,
+  Map,
   AlertCircle,
   ShoppingBag,
   FilePlus2,
@@ -216,22 +216,22 @@ export function GeneratePOPage() {
         const updatedPOs = purchaseOrders.map(po =>
           po.poNumber === editingOriginalPoNumber
             ? {
-                ...po,
-                poNumber: poNumber.trim(),
-                vendorName: vendorName.trim(),
-                totalQuantity: qty,
-                location,
-                address: address.trim(),
-                poReceivedDate,
-                poExpiredDate,
-                poPdfName: updatedPoPdfName,
-                timestamp: editTimestamp,
-                'Narration': narration.trim(),
-                narration: narration.trim(),
-                'Narretion': narration.trim(),
-                narretion: narration.trim(),
-                'Supply Quantity 1': parsedSupplyQty
-              }
+              ...po,
+              poNumber: poNumber.trim(),
+              vendorName: vendorName.trim(),
+              totalQuantity: qty,
+              location,
+              address: address.trim(),
+              poReceivedDate,
+              poExpiredDate,
+              poPdfName: updatedPoPdfName,
+              timestamp: editTimestamp,
+              'Narration': narration.trim(),
+              narration: narration.trim(),
+              'Narretion': narration.trim(),
+              narretion: narration.trim(),
+              'Supply Quantity 1': parsedSupplyQty
+            }
             : po
         );
         setPurchaseOrders(updatedPOs);
@@ -322,8 +322,8 @@ export function GeneratePOPage() {
       setPurchaseOrders(prev =>
         prev.map(po => {
           const match = (po['Serial No'] && po['Serial No'] === serialNoKey) ||
-                        (po.serialNo && po.serialNo === serialNoKey) ||
-                        (po.poNumber === targetItem.poNumber);
+            (po.serialNo && po.serialNo === serialNoKey) ||
+            (po.poNumber === targetItem.poNumber);
           return match ? { ...po, 'Delete Status': 'Deleted' } : po;
         })
       );
@@ -371,16 +371,16 @@ export function GeneratePOPage() {
     const q = searchTerm.toLowerCase();
     return activePOs.filter(po =>
       String(po['Serial No'] || po.serialNo || '').toLowerCase().includes(q) ||
-      String(po.poNumber   || '').toLowerCase().includes(q) ||
+      String(po.poNumber || '').toLowerCase().includes(q) ||
       String(po.vendorName || '').toLowerCase().includes(q) ||
-      String(po.location   || '').toLowerCase().includes(q) ||
-      String(po.createdBy  || '').toLowerCase().includes(q)
+      String(po.location || '').toLowerCase().includes(q) ||
+      String(po.createdBy || '').toLowerCase().includes(q)
     );
   }, [activePOs, searchTerm]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
-      
+
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="text-left">
@@ -407,7 +407,7 @@ export function GeneratePOPage() {
               />
             </div>
 
-<div className="text-xs text-muted-foreground hidden md:inline-block">
+            <div className="text-xs text-muted-foreground hidden md:inline-block">
               {filteredPOs.length} record(s)
             </div>
           </div>
@@ -428,6 +428,8 @@ export function GeneratePOPage() {
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider pl-4 md:pl-6 py-3 text-left">Actions</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">#</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Number</TableHead>
+                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Received Date</TableHead>
+                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Expired Date</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Vendor Name</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Quantity</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Narretion</TableHead>
@@ -435,8 +437,6 @@ export function GeneratePOPage() {
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Location</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Address</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">Created By</TableHead>
-                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Received Date</TableHead>
-                  <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO Expired Date</TableHead>
                   <TableHead className="text-xs text-muted-foreground font-bold uppercase tracking-wider py-3 text-left">PO PDF</TableHead>
                 </TableRow>
               </TableHeader>
@@ -477,6 +477,19 @@ export function GeneratePOPage() {
                       {/* PO Number */}
                       <TableCell className="py-4 text-left font-semibold text-primary text-xs sm:text-sm">
                         {po.poNumber}
+                      </TableCell>
+
+                      {/* PO Received Date */}
+                      <TableCell className="py-4 text-left">
+                        <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          {formatDisplayDate(po.poReceivedDate || po['PO Received Date'] || po.timestamp, false)}
+                        </span>
+                      </TableCell>
+
+                      {/* PO Expired Date */}
+                      <TableCell className="py-4 text-left text-xs sm:text-sm text-muted-foreground">
+                        {formatDisplayDate(po.poExpiredDate || po['PO Expired Date'], false)}
                       </TableCell>
 
                       {/* Vendor Name */}
@@ -520,19 +533,6 @@ export function GeneratePOPage() {
                           <User className="h-3.5 w-3.5 text-muted-foreground" />
                           {po.createdBy}
                         </span>
-                      </TableCell>
-
-                      {/* PO Received Date */}
-                      <TableCell className="py-4 text-left">
-                        <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          {formatDisplayDate(po.poReceivedDate || po['PO Received Date'] || po.timestamp, false)}
-                        </span>
-                      </TableCell>
-
-                      {/* PO Expired Date */}
-                      <TableCell className="py-4 text-left text-xs sm:text-sm text-muted-foreground">
-                        {formatDisplayDate(po.poExpiredDate || po['PO Expired Date'], false)}
                       </TableCell>
 
                       {/* PO PDF */}
@@ -592,14 +592,14 @@ export function GeneratePOPage() {
                 {isEditing ? 'Edit Purchase Order' : 'Generate Purchase Order'}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-1">
-                {isEditing 
+                {isEditing
                   ? ''
                   : 'Enter purchasing details to create a persistent purchase order record.'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 py-2">
-              
+
               {/* PO Number */}
               <div className="space-y-1.5 text-left">
                 <Label htmlFor="poNumber" className="text-xs font-semibold text-muted-foreground pl-0.5 flex items-center gap-1.5">
